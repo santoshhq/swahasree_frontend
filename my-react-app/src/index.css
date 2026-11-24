@@ -1,0 +1,220 @@
+/* Swahasree design tokens. */
+:root {
+  /* Brand */
+  --brand-red: #e51e25;
+  --forest: var(--brand-red);
+  --forest-deep: color-mix(in srgb, var(--brand-red) 75%, black);
+  --forest-ink: color-mix(in srgb, var(--brand-red) 42%, black);
+  --leaf: var(--forest-deep);
+  --gold: #c6a267;
+  --gold-deep: #765421;
+  --gold-soft: #f8ecd7;
+  /* Kept for badges and alerts: the logo's terracotta, a shade quieter. */
+  --terracotta: #c8643a;
+  --terracotta-ink: #a14a22;
+
+  /* Surfaces */
+  --white: #ffffff;
+  --cream: #fcf7f3;
+  --ivory: #f9f0ed;
+  --mint: #f9ecee;
+  --mint-strong: #f3dce0;
+  --sand: #f6f0ec;
+
+  /* Text and lines */
+  --ink: #2b1b1e;
+  --ink-soft: #644c50;
+  --ink-mute: #786467;
+  --line: #eadfe0;
+  --line-strong: #dbbfc3;
+  --danger: var(--forest-deep);
+
+  --font: 'DM Sans', system-ui, 'Segoe UI', sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
+  /* Shape */
+  --radius-btn: 6px;
+  --radius-field: 7px;
+  --radius-card: 5px;
+  --radius-image: 6px;
+  --radius-panel: 10px;
+
+  /* Elevation: quiet, warm red-tinted */
+  --shadow-sm: 0 1px 2px rgb(71 13 19 / 0.06);
+  --shadow-md: 0 10px 28px -16px rgb(71 13 19 / 0.28);
+  --shadow-hover: 0 18px 40px -24px rgb(71 13 19 / 0.38);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Layout */
+  --gutter: clamp(16px, 4vw, 40px);
+  --max: 1280px;
+  --hero-banner-ratio: 50 / 21;
+  --section-gap: clamp(52px, 7vw, 96px);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 140px;
+  /* No visible page scrollbar on the right edge; the page still scrolls with the wheel,
+     touchpad, keyboard and touch. */
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  color: var(--forest);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(1.75rem, 1.35rem + 1.6vw, 2.5rem);
+}
+
+h2 {
+  font-size: 1.375rem;
+}
+
+h3 {
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--forest);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+strong {
+  font-weight: 600;
+}
+
+/* iPhones zoom the whole page into any field whose text is under 16px (the sort menu, every
+   admin field). Phones and tablets get at least 16px; larger text stays as designed. */
+@media (max-width: 920px), (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--gold-soft);
+  color: var(--forest-ink);
+}
+
+.container {
+  width: 100%;
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

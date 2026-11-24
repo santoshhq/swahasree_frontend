@@ -1,0 +1,93 @@
+/* Swahasree storefront */
+.pantry-perks { border-bottom: 1px solid var(--line); background: #fff; }
+.pantry-perks ul {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  list-style: none;
+  padding-block: 18px;
+}
+.pantry-perks li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-inline: 10px;
+  color: var(--ink);
+  font-size: .9rem;
+  font-weight: 600;
+}
+.pantry-perks li + li { border-inline-start: 1px solid var(--line); }
+.pantry-perks svg { flex: none; color: var(--forest); }
+.pantry-categories { padding-block: clamp(35px, 6vw, 72px); }
+.pantry-categories h2 { font: 700 clamp(2rem, 4vw, 3.5rem)/.96 var(--font-display); color: var(--ink); }
+.pantry-categories > div { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.pantry-categories a { display: flex; align-items: center; gap: 12px; text-decoration: none; border: 1px solid var(--line-strong); padding: 9px 14px; }
+
+.store-logo {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--white);
+  line-height: 0;
+}
+.store-logo img { width: clamp(132px, 17vw, 184px); height: auto; }
+.site-header { backdrop-filter: none; background: #fff; }
+.category-bar { border-top: 1px solid var(--line); }
+.category-bar__link { font-weight: 600; }
+.search input { border-radius: 8px; background: #faf7f5; }
+.search button { border-radius: 6px; }
+.product-card { border-radius: 4px; border-color: var(--line); box-shadow: none; }
+.product-card__media { border-radius: 0; background: #f8f1eb; }
+.product-card__name { font: 700 clamp(1.3rem, 2.15vw, 1.85rem)/1.08 var(--font-display); }
+.product-card__category { color: var(--ink-soft); text-transform: none; letter-spacing: 0; }
+.product-card__add, .card-stepper { border-radius: 5px; }
+.product-detail { gap: clamp(24px, 5vw, 85px); }
+.product-info h1, .page-head h1 { font: 700 clamp(2.7rem, 5.5vw, 5.7rem)/.96 var(--font-display); color: var(--ink); }
+.gallery__main { border-radius: 4px; background: var(--cream); }
+.product-info__price { color: var(--forest); }
+.sizes__options .size { border-radius: 5px; }
+.summary, .bag-line__image { border-radius: 6px; }
+.whatsapp-button { background: var(--forest); }
+
+.product-flavour { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.product-flavour div { min-width: 80px; border: 1px solid var(--line); padding: 6px 10px; }
+.product-flavour dt { color: var(--ink-soft); font-size: .8rem; }
+.product-flavour dd { margin: 0; font-weight: 700; }
+.bag-flavour { min-width: 0; margin: 22px 0 0; border: 1px solid var(--line-strong); padding: 12px 16px 16px; }
+.bag-flavour legend { color: var(--ink); font-weight: 700; padding-inline: 5px; }
+.bag-flavour__fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(122px, 1fr)); gap: 10px; }
+.bag-flavour__fields label { display: grid; gap: 4px; }
+.bag-flavour__fields select { background: #fff; border: 1px solid var(--line-strong); border-radius: 5px; padding: 6px; }
+
+.pantry-checkout-steps { padding-block: 16px; }
+.pantry-checkout-steps .checkout-steps__step { padding: 4px; min-height: 0; }
+.pantry-checkout-steps__icon { display: grid; place-items: center; width: 36px; min-height: 36px; border-radius: 50%; border: 1px solid var(--line); color: var(--ink-soft); margin: 0 auto 4px; }
+.is-current > .pantry-checkout-steps__icon, .is-done > .pantry-checkout-steps__icon { color: var(--forest); border-color: var(--line-strong); }
+
+.pantry-footer {
+  margin-top: clamp(40px, 6vw, 80px);
+  padding-top: clamp(38px, 6vw, 65px);
+  background: var(--brand-red);
+  color: var(--white);
+}
+.pantry-footer__grid { display: grid; grid-template-columns: 1.45fr repeat(3, minmax(0, 1fr)); gap: 28px; }
+.pantry-footer__brand p { margin-top: 10px; max-width: 24ch; }
+.pantry-footer nav { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.pantry-footer h2 { font-size: .98rem; color: #fff; margin: 0 0 5px; }
+.pantry-footer a { display: inline-flex; align-items: center; gap: 7px; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.pantry-footer a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.pantry-footer :focus-visible { outline-color: #f6dfad; }
+.pantry-footer__bottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 36px; padding-block: 18px; border-top: 1px solid rgb(255 255 255 / .35); font-size: .82rem; }
+
+@media (max-width: 780px) {
+  .pantry-perks li { flex-direction: column; gap: 5px; text-align: center; font-size: .75rem; }
+  .pantry-perks ul { padding-block: 12px; }
+  .pantry-footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .pantry-footer__grid { gap: 24px 14px; }
+  .pantry-footer__brand { grid-column: 1 / -1; }
+}
+
+.admin-auth__logo img { width: min(210px, 100%); height: auto; }

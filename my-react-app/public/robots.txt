@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /manager
+Disallow: /checkout
+Disallow: /account
+Sitemap: https://swahasree.com/sitemap.xml

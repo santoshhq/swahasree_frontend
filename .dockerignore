@@ -1,0 +1,26 @@
+# The build context is this folder, but the app lives in my-react-app/, so every pattern starts
+# with **/ to match at any depth (a bare "node_modules" only matches ./node_modules).
+
+# Installed and built inside the image (npm ci, npm run build); local copies would overwrite them.
+**/node_modules
+**/dist
+**/dist-ssr
+**/.vite
+
+# Secrets and local settings
+**/.env
+**/.env.*
+
+# Version control, editors, OS clutter, logs
+**/.git
+**/.gitignore
+**/.vscode
+**/.idea
+**/.claude
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+
+# Docker's own files aren't needed inside the image.
+Dockerfile
+.dockerignore

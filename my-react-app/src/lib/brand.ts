@@ -1,0 +1,9 @@
+export const BRAND_NAME = 'Swahasree'
+export const BRAND_RED = '#e51e25'
+export const BRAND_LOGO = '/brand/swahasree-logo.webp'
+export const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL?.trim() || 'info@swahasree.com'
+export const SUPPORT_PHONE = import.meta.env.VITE_SUPPORT_PHONE?.trim() || ''
+export const SUPPORT_PHONE_DISPLAY = SUPPORT_PHONE
+export const WHATSAPP_DIGITS = (import.meta.env.VITE_WHATSAPP_NUMBER || SUPPORT_PHONE).replace(/\D/g, '')
+export const WHATSAPP_URL = WHATSAPP_DIGITS ? `https://wa.me/${WHATSAPP_DIGITS}` : ''
+export const WHATSAPP_DISPLAY = WHATSAPP_DIGITS ? `+${WHATSAPP_DIGITS}` : ''
