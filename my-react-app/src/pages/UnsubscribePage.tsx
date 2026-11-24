@@ -4,7 +4,7 @@ import { BrandLink, EmptyState } from '../components/ui'
 import { ApiError, unsubscribeCartReminders } from '../lib/api'
 import { usePageMeta } from '../lib/seo'
 
-// The "Stop bag reminders" link in a reminder email. It asks for a click rather than unsubscribing
+// The "Stop cart reminders" link in a reminder email. It asks for a click rather than unsubscribing
 // on load: mail scanners open links in emails, and that mustn't switch the reminders off.
 export function UnsubscribePage() {
   usePageMeta({ title: 'Unsubscribe', noindex: true })
@@ -27,9 +27,9 @@ export function UnsubscribePage() {
   if (state === 'done') {
     return (
       <div className="container page">
-        <EmptyState title="Bag reminders are off">
-          <p>We won't email you about items left in your bag again. Your bag is still saved.</p>
-          <BrandLink to="/cart">View your bag</BrandLink>
+        <EmptyState title="Cart reminders are off">
+          <p>We won't email you about items left in your cart again. Your cart is still saved.</p>
+          <BrandLink to="/cart">View your cart</BrandLink>
         </EmptyState>
       </div>
     )
@@ -37,12 +37,12 @@ export function UnsubscribePage() {
 
   return (
     <div className="container page">
-      <EmptyState title="Stop bag reminders?">
-        <p>We send a few reminders when items are left in your bag. You can switch them off here.</p>
+      <EmptyState title="Stop cart reminders?">
+        <p>We send a few reminders when items are left in your cart. You can switch them off here.</p>
         {error && <p className="notice notice--warn" role="alert">{error}</p>}
         {token && (
           <button className="brand-button" onClick={stop} disabled={state === 'working'}>
-            <span>{state === 'working' ? 'Saving…' : 'Stop bag reminders'}</span>
+            <span>{state === 'working' ? 'Saving…' : 'Stop cart reminders'}</span>
             <span className="brand-button__dot" />
           </button>
         )}

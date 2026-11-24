@@ -101,7 +101,7 @@ export default function App() {
         <Route path="account/orders/:orderId" element={<OrderDetailPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
-      {/* Admin pages stand apart from the shop: no store header, bag or category bar. */}
+      {/* Admin pages stand apart from the shop: no store header, cart or category bar. */}
       <Route path="admin-login" element={<AdminLoginPage />} />
       <Route path="manager-login" element={<ManagerLoginPage />} />
       {/* The admin panel: the owner's at /admin, a store manager's at /manager, the same pages in both.

@@ -1,6 +1,6 @@
 import { readStored, writeStored } from './storage'
 
-// Kept apart from the customer session: an admin signing in never touches a shopper's bag or orders.
+// Kept apart from the customer session: an admin signing in never touches a shopper's cart or orders.
 const KEY = 'swahasree_admin_session'
 
 // What a store manager may do in each admin section (the owner ticks these on the Managers page).

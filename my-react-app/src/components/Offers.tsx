@@ -22,19 +22,19 @@ export function OfferBox({ offers }: { offers: ShopOffer[] }) {
   )
 }
 
-/** Free items in a bag list (cart, order page): no price, no quantity buttons, the offer named. */
-export function FreeBagLines({ items }: { items: OrderItem[] }) {
+/** Free items in the cart and order detail lists: no price, no quantity buttons, the offer named. */
+export function FreeCartLines({ items }: { items: OrderItem[] }) {
   return (
     <>
       {items.map((item) => (
-        <li key={`free|${item.offer_id}|${item.product_id}|${item.variant_name}`} className="bag-line bag-line--static bag-line--free">
-          <span className="bag-line__image"><ProductImage src={item.image} alt="" /></span>
-          <div className="bag-line__info">
-            <span className="bag-line__name">{item.product_name}</span>
-            <span className="bag-line__variant">{item.variant_name} × {item.quantity}</span>
-            <span className="bag-line__offer"><GiftIcon size={14} /> {item.offer_title}</span>
+        <li key={`free|${item.offer_id}|${item.product_id}|${item.variant_name}`} className="cart-line cart-line--static cart-line--free">
+          <span className="cart-line__image"><ProductImage src={item.image} alt="" /></span>
+          <div className="cart-line__info">
+            <span className="cart-line__name">{item.product_name}</span>
+            <span className="cart-line__variant">{item.variant_name} × {item.quantity}</span>
+            <span className="cart-line__offer"><GiftIcon size={14} /> {item.offer_title}</span>
           </div>
-          <p className="bag-line__total price">
+          <p className="cart-line__total price">
             <span className="free-price">FREE</span>
             {item.free_value ? <s className="free-price__worth">{money(item.free_value)}</s> : null}
           </p>
@@ -44,7 +44,7 @@ export function FreeBagLines({ items }: { items: OrderItem[] }) {
   )
 }
 
-/** "Add 1 more to get ..." under the bag. */
+/** "Add 1 more to get ..." under the cart. */
 export function OfferNudges({ nudges }: { nudges: OfferNudge[] }) {
   if (!nudges.length) return null
   return (

@@ -36,7 +36,7 @@ function validate(d: Draft): Partial<Record<Field, string>> {
 }
 
 /**
- * Bulk orders (shops, restaurants, events): an enquiry form rather than the bag. The email is
+ * Bulk orders (shops, restaurants, events): an enquiry form rather than the cart. The email is
  * confirmed with a 6-digit code first, so replies reach a real inbox; "Send enquiry" stays off until then.
  */
 export function BulkOrdersPage() {

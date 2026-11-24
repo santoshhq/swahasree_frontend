@@ -1,5 +1,5 @@
 // The store's icons, from Lucide (lucide-react). They draw with currentColor, so they follow the
-// text colour. Wrapped here so every page asks for "the bag icon" rather than a Lucide name, and
+// text colour. Wrapped here so every page asks for "the cart icon" rather than a Lucide name, and
 // each keeps the size it was designed at.
 import {
   ArrowLeft,
@@ -27,7 +27,7 @@ import {
   Phone,
   Plus,
   Search,
-  ShoppingBag,
+  ShoppingCart,
   Star,
   Trash2,
   Truck,
@@ -38,7 +38,7 @@ import {
 type IconProps = { size?: number; className?: string }
 
 export const SearchIcon = ({ size = 20, className }: IconProps) => <Search size={size} className={className} aria-hidden />
-export const BagIcon = ({ size = 22, className }: IconProps) => <ShoppingBag size={size} className={className} aria-hidden />
+export const CartIcon = ({ size = 22, className }: IconProps) => <ShoppingCart size={size} className={className} aria-hidden />
 export const UserIcon = ({ size = 22, className }: IconProps) => <User size={size} className={className} aria-hidden />
 export const MenuIcon = ({ size = 24, className }: IconProps) => <Menu size={size} className={className} aria-hidden />
 export const CloseIcon = ({ size = 22, className }: IconProps) => <X size={size} className={className} aria-hidden />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { AddressForm } from '../components/AddressForm'
-import { ArrowIcon, BagIcon, ChevronIcon, EditIcon, MailIcon, PinIcon, PlusIcon, TrashIcon, UserIcon } from '../components/Icons'
+import { ArrowIcon, CartIcon, ChevronIcon, EditIcon, MailIcon, PinIcon, PlusIcon, TrashIcon, UserIcon } from '../components/Icons'
 import { SignInPrompt } from '../components/SignInPrompt'
 import { StatusPill } from '../components/StatusPill'
 import { BrandLink, EmptyState, ErrorState, Loading, ProductImage } from '../components/ui'
@@ -18,8 +18,8 @@ const PAGE = 10
 const THUMBS = 3
 
 type Section = 'orders' | 'addresses' | 'profile'
-const SECTIONS: { id: Section; label: string; icon: typeof BagIcon }[] = [
-  { id: 'orders', label: 'Orders', icon: BagIcon },
+const SECTIONS: { id: Section; label: string; icon: typeof CartIcon }[] = [
+  { id: 'orders', label: 'Orders', icon: CartIcon },
   { id: 'addresses', label: 'Addresses', icon: PinIcon },
   { id: 'profile', label: 'Profile', icon: UserIcon },
 ]
@@ -376,7 +376,7 @@ function ProfilePanel({ customer, orderCount, onSignOut }: { customer: Customer;
       <div className="account-signout">
         <div>
           <h3>Sign out</h3>
-          <p>Your bag stays on this device. You can sign back in with Google any time.</p>
+          <p>Your cart stays on this device. You can sign back in with Google any time.</p>
         </div>
         <button type="button" className="account-button account-button--quiet" onClick={onSignOut}>Sign out</button>
       </div>

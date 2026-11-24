@@ -18,6 +18,7 @@ export function RangeStrip({ categories }: { categories: Category[] }) {
       <div>
         {featured.map((category) => (
           <Link to={`/category/${encodeURIComponent(category.category_id)}`} key={category.category_id}>
+            {category.image_url && <img src={category.image_url} alt="" loading="lazy" width={48} height={48} />}
             {titleCase(category.category_name)} <ArrowIcon size={16} />
           </Link>
         ))}

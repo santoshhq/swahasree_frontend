@@ -1,7 +1,7 @@
-import { BagIcon, CardIcon, CheckIcon, PinIcon, TruckIcon } from './Icons'
+import { CartIcon, CardIcon, CheckIcon, PinIcon, TruckIcon } from './Icons'
 
 const STEPS = [
-  { Icon: BagIcon, label: 'Your bag' },
+  { Icon: CartIcon, label: 'Your cart' },
   { Icon: PinIcon, label: 'Address' },
   { Icon: CardIcon, label: 'Payment' },
   { Icon: CheckIcon, label: 'Confirmation' },

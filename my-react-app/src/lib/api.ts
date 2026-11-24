@@ -204,7 +204,7 @@ export const placeOrder = (token: string, input: PlaceOrderInput, idempotencyKey
     headers: { 'Idempotency-Key': idempotencyKey },
   })
 
-// The store's methods; any product in the bag tells the backend which store.
+// The store's methods; any product in the cart tells the backend which store.
 export const getPaymentOptions = (productId: string, signal?: AbortSignal) =>
   request<PaymentOptions>(`/payments/methods${query({ product_id: productId })}`, { signal })
 
@@ -217,7 +217,7 @@ export const getShippingQuote = (pincode: string, items: CartLine[], paymentMeth
 // The offers running now, for badges on products (matched by product or category in lib/offers.ts).
 export const getActiveOffers = (signal?: AbortSignal) => request<ShopOffer[]>('/offers/active', { signal })
 
-// The free items this bag gets, and the offers it is close to. Worked out again when the order is placed.
+// The free items this cart gets, and the offers it is close to. Worked out again when the order is placed.
 export const previewOffers = (items: CartLine[], signal?: AbortSignal) =>
   request<OfferPreview>('/offers/preview', { method: 'POST', body: { items }, signal })
 
@@ -315,19 +315,19 @@ export const requestStockAlert = (token: string, productId: string) =>
 export const getMyStockAlerts = (token: string) =>
   request<{ product_id: string; requested_at: string }[]>('/customers/me/stock-alerts', { token })
 
-// ---------- Saved bag (signed in) ----------
+// ---------- Saved cart (signed in) ----------
 
-// The bag kept on the account, so it follows the customer across devices and the store can remind
+// The cart kept on the account, so it follows the customer across devices and the store can remind
 // them about it. Names, prices and "unavailable" come from the products; deleted ones are left out.
-// The whole bag; an empty list empties it.
+// The whole cart; an empty list empties it.
 export const saveMyCart = (token: string, items: CartLine[]) =>
   request<{ items: CartItem[] }>('/customers/me/cart', { method: 'PUT', token, body: { items } })
 
-// At sign-in: this browser's bag joined to the saved one (a product in both keeps the larger quantity).
+// At sign-in: this browser's cart joined to the saved one (a product in both keeps the larger quantity).
 export const mergeMyCart = (token: string, items: CartLine[]) =>
   request<{ items: CartItem[] }>('/customers/me/cart/merge', { method: 'POST', token, body: { items } })
 
-// The "Stop bag reminders" link in a reminder email; the token in the link says who.
+// The "Stop cart reminders" link in a reminder email; the token in the link says who.
 export const unsubscribeCartReminders = (token: string) =>
   request<{ message: string; email_id: string }>('/cart-reminders/unsubscribe', { method: 'POST', body: { token } })
 

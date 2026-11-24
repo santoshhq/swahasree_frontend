@@ -2,10 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { mergeMyCart, saveMyCart } from '../lib/api'
 import { readStored, writeStored } from '../lib/storage'
 import { useAuth } from './auth'
-import { CartContext, MAX_QUANTITY, normalizeFlavors, orderLine, type CartItem } from './cart'
+import { addCartItem, cartFlavors, CartContext, MAX_QUANTITY, normalizeFlavors, orderLine, type CartItem, type CartState } from './cart'
 
 const KEY = 'swahasree_cart'
-// Wait for a pause in changes (stepper clicks) before saving the bag to the account.
+// Wait for a pause in changes (stepper clicks) before saving the cart to the account.
 const SAVE_DELAY_MS = 800
 
 const same = (item: CartItem, productId: string, variantName: string) =>
@@ -13,14 +13,14 @@ const same = (item: CartItem, productId: string, variantName: string) =>
 
 const lines = (items: CartItem[]) => items.map(orderLine)
 
-// What the account needs to know about the bag; prices and "unavailable" don't count as a change.
+// What the account needs to know about the cart; prices and "unavailable" don't count as a change.
 const signature = (items: CartItem[]) =>
   JSON.stringify(lines(items).sort((a, b) => `${a.product_id}|${a.variant_name}`.localeCompare(`${b.product_id}|${b.variant_name}`)))
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => normalizeFlavors(readStored<CartItem[]>(KEY, [])))
   const token = useAuth().session?.token ?? null
-  // The bag as last saved on the account; null until this sign-in's bag has been merged with it.
+  // The cart as last saved on the account; null until this sign-in's cart has been merged with it.
   const saved = useRef<string | null>(null)
   const latest = useRef(items)
 
@@ -29,8 +29,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     writeStored(KEY, items)
   }, [items])
 
-  // Signed in (or opening the site already signed in): join this browser's bag to the saved one,
-  // so a bag from another device shows here too. If that fails the bag stays in this browser only.
+  // Signed in (or opening the site already signed in): join this browser's cart to the saved one,
+  // so a cart from another device shows here too. If that fails the cart stays in this browser only.
   useEffect(() => {
     saved.current = null
     if (!token) return
@@ -66,16 +66,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const replace = (update: (current: CartItem[]) => CartItem[]) =>
     setItems((current) => normalizeFlavors(update(current)))
 
-  const add = (item: Omit<CartItem, 'quantity'>, quantity: number) =>
-    replace((current) => {
-      const existing = current.find((i) => same(i, item.product_id, item.variant_name))
-      if (existing) {
-        return current.map((i) =>
-          i === existing ? { ...i, ...item, quantity: Math.min(MAX_QUANTITY, i.quantity + quantity) } : i,
-        )
-      }
-      return [...current, { ...item, quantity: Math.min(MAX_QUANTITY, quantity) }]
-    })
+  const add: CartState['add'] = (item, quantity) =>
+    replace((current) => addCartItem(current, item, quantity))
 
   const setQuantity = (productId: string, variantName: string, quantity: number) =>
     replace((current) =>
@@ -83,6 +75,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         same(i, productId, variantName) ? { ...i, quantity: Math.max(1, Math.min(MAX_QUANTITY, quantity)) } : i,
       ),
     )
+
+  const setFlavor: CartState['setFlavor'] = (productId, field, level, settings) =>
+    replace((current) => {
+      const selection = { ...cartFlavors(current).get(productId)?.selection, [field]: level }
+      return current.map((item) => item.product_id === productId ? {
+        ...item, customization: selection, customization_settings: settings ?? item.customization_settings,
+      } : item)
+    })
 
   const remove = (productId: string, variantName: string) =>
     replace((current) => current.filter((i) => !same(i, productId, variantName)))
@@ -97,6 +97,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         subtotal: available.reduce((sum, i) => sum + i.price * i.quantity, 0),
         add,
         setQuantity,
+        setFlavor,
         remove,
         replace,
         clear: () => setItems([]),

@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { BRAND_RED } from '../lib/brand'
 
@@ -11,7 +11,7 @@ type Piece = { id: string; x: number; y: number; dx: number; dy: number; spin: n
 const between = (min: number, max: number) => min + Math.random() * (max - min)
 
 /**
- * A short confetti burst for a moment worth celebrating (a coupon that worked). `fire(element)`
+ * A short confetti burst for a coupon or a customization unlock. `fire(element)`
  * bursts from that element's centre; the pieces clear themselves. Nothing happens for people who
  * asked their system for less motion.
  */
@@ -19,7 +19,9 @@ export function useConfetti() {
   const [pieces, setPieces] = useState<Piece[]>([])
   const timer = useRef<number | undefined>(undefined)
 
-  const fire = (from: HTMLElement | null) => {
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  const fire = useCallback((from: HTMLElement | null) => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
     const box = from?.getBoundingClientRect()
     const x = box ? box.left + box.width / 2 : window.innerWidth / 2
@@ -38,7 +40,7 @@ export function useConfetti() {
     })))
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => setPieces([]), DURATION_MS + 200)
-  }
+  }, [])
 
   const confetti = pieces.length
     ? createPortal(

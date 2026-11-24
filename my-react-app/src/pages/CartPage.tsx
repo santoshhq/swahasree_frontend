@@ -1,23 +1,23 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router'
 import { ActionBar } from '../components/ActionBar'
+import { FlavorPanel } from '../components/FlavorOptions'
 import { TrashIcon } from '../components/Icons'
-import { FreeBagLines, OfferNudges } from '../components/Offers'
+import { FreeCartLines, OfferNudges } from '../components/Offers'
 import { QuantityStepper } from '../components/QuantityStepper'
 import { BrandLink, EmptyState, ProductImage } from '../components/ui'
 import { ApiError, getProduct, isShownInStore } from '../lib/api'
 import { money, plural } from '../lib/format'
-import { enabledFlavors, FLAVOR_LABELS, FLAVOR_LEVELS } from '../lib/flavor'
 import { useOfferPreview } from '../lib/offers'
-import type { FlavorField, FlavorLevel, Product } from '../lib/types'
+import type { Product } from '../lib/types'
 import { useAuth } from '../state/auth'
 import { cartFlavors, useCart, type CartItem } from '../state/cart'
 import { useSignIn } from '../state/signIn'
 import { usePageMeta } from '../lib/seo'
 
 export function CartPage() {
-  usePageMeta({ title: 'Your bag', noindex: true })
-  const { items, count, subtotal, setQuantity, remove, replace } = useCart()
+  usePageMeta({ title: 'Your cart', noindex: true })
+  const { items, count, subtotal, setQuantity, setFlavor, remove, replace } = useCart()
   const [checking, setChecking] = useState(false)
   const checkoutButton = useRef<HTMLAnchorElement>(null)
   const { session } = useAuth()
@@ -73,14 +73,14 @@ export function CartPage() {
   if (!items.length) {
     return (
       <div className="container page">
-        <EmptyState title="Your bag is empty">
+        <EmptyState title="Your cart is empty">
           <p>Explore pickles and pantry favourites whenever you’re ready.</p>
-          {/* A bag saved on another device (or from a reminder email) shows once signed in. */}
+          {/* A cart saved on another device (or from a reminder email) shows once signed in. */}
           {!session && (
             <p>
               Added items on another device?{' '}
               <button type="button" className="text-button" onClick={() => openSignIn({ from: '/cart' })}>Sign in</button>{' '}
-              to see your saved bag.
+              to see your saved cart.
             </p>
           )}
           <BrandLink to="/shop">Start shopping</BrandLink>
@@ -91,44 +91,37 @@ export function CartPage() {
 
   const unavailable = items.filter((i) => i.unavailable)
   const flavours = cartFlavors(items)
-  const chooseFlavour = (id: string, field: FlavorField, level: FlavorLevel | '') =>
-    replace((current) => {
-      const selection = { ...cartFlavors(current).get(id)?.selection }
-      if (level) selection[field] = level
-      else delete selection[field]
-      return current.map((item) => item.product_id === id ? { ...item, customization: selection } : item)
-    })
 
   return (
     <div className="container page">
       <header className="page-head">
-        <h1>Your bag</h1>
+        <h1>Your cart</h1>
       </header>
 
       <div className="checkout-layout">
-        <section aria-label="Items in your bag">
+        <section aria-label="Items in your cart">
           {unavailable.length > 0 && (
             <p className="notice notice--warn" role="alert">
               {unavailable.length === 1 ? 'One item is' : `${unavailable.length} items are`} no longer available.
               Remove {unavailable.length === 1 ? 'it' : 'them'} to check out.
             </p>
           )}
-          <ul className="bag-list">
+          <ul className="cart-list">
             {items.map((item) => (
-              <li key={`${item.product_id}|${item.variant_name}`} className={`bag-line${item.unavailable ? ' bag-line--out' : ''}`}>
-                <Link to={`/product/${item.product_id}`} className="bag-line__image" tabIndex={-1} aria-hidden>
+              <li key={`${item.product_id}|${item.variant_name}`} className={`cart-line${item.unavailable ? ' cart-line--out' : ''}`}>
+                <Link to={`/product/${item.product_id}`} className="cart-line__image" tabIndex={-1} aria-hidden>
                   <ProductImage src={item.image} alt="" />
                 </Link>
-                <div className="bag-line__info">
-                  <Link to={`/product/${item.product_id}`} className="bag-line__name">{item.product_name}</Link>
-                  <span className="bag-line__variant">{item.variant_name}</span>
+                <div className="cart-line__info">
+                  <Link to={`/product/${item.product_id}`} className="cart-line__name">{item.product_name}</Link>
+                  <span className="cart-line__variant">{item.variant_name}</span>
                   {item.unavailable ? (
                     <span className="tag tag--muted">Not available</span>
                   ) : (
-                    <span className="bag-line__unit">{money(item.price)} each</span>
+                    <span className="cart-line__unit">{money(item.price)} each</span>
                   )}
                 </div>
-                <div className="bag-line__actions">
+                <div className="cart-line__actions">
                   {!item.unavailable && (
                     <QuantityStepper value={item.quantity} onChange={(n) => setQuantity(item.product_id, item.variant_name, n)} label={item.product_name} />
                   )}
@@ -136,33 +129,14 @@ export function CartPage() {
                     <TrashIcon />
                   </button>
                 </div>
-                <p className="bag-line__total price">{item.unavailable ? '' : money(item.price * item.quantity)}</p>
+                <p className="cart-line__total price">{item.unavailable ? '' : money(item.price * item.quantity)}</p>
               </li>
             ))}
-            <FreeBagLines items={freeItems} />
+            <FreeCartLines items={freeItems} />
           </ul>
-          {[...flavours].map(([id, { name, grams, settings, selection }]) => {
-            const fields = enabledFlavors(settings)
-            if (!settings?.min_weight_kg || !fields.length || !grams) return null
-            const remaining = Math.round(settings.min_weight_kg * 1000) - grams
-            return (
-              <fieldset className="bag-flavour" key={id}>
-                <legend>Customize {name}</legend>
-                {remaining > 0 ? <p>Add {remaining < 1000 ? `${remaining} g` : `${remaining / 1000} kg`} more to customize.</p> : (
-                  <div className="bag-flavour__fields">
-                    {fields.map((field) => (
-                      <label key={field}>{FLAVOR_LABELS[field]} level
-                        <select value={selection[field] ?? ''} onChange={(e) => chooseFlavour(id, field, e.target.value as FlavorLevel | '')}>
-                          <option value="">Standard</option>
-                          {FLAVOR_LEVELS.map((level) => <option key={level}>{level}</option>)}
-                        </select>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </fieldset>
-            )
-          })}
+          {[...flavours].map(([id, group]) => group.grams > 0 && (
+            <FlavorPanel key={id} {...group} onChange={(field, level) => setFlavor(id, field, level)} />
+          ))}
           <OfferNudges nudges={offers?.nudges ?? []} />
         </section>
 

@@ -12,7 +12,7 @@ export function OrderPlacedPage() {
   const order = (useLocation().state as { order?: Order } | null)?.order
   const { clear } = useCart()
 
-  // The order is saved, so the bag it came from is done with.
+  // The order is saved, so the cart it came from is done with.
   useEffect(() => {
     if (order) clear()
     // eslint-disable-next-line react-hooks/exhaustive-deps

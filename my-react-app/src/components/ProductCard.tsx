@@ -6,7 +6,7 @@ import { money } from '../lib/format'
 import { offersFor, useActiveOffers } from '../lib/offers'
 import type { Product, Variant } from '../lib/types'
 import { MAX_QUANTITY, useCart } from '../state/cart'
-import { MinusIcon, PlusIcon, TrashIcon } from './Icons'
+import { CartIcon, MinusIcon, PlusIcon, TrashIcon } from './Icons'
 import { NotifyButton } from './NotifyButton'
 import { RatingBadge } from './Stars'
 import { ProductImage } from './ui'
@@ -28,7 +28,7 @@ export function ProductCard({ product, variants }: { product: Product; variants?
   const inStock = variants ? shownVariants.some((v) => v.in_stock) : product.in_stock
 
   // The size the card adds: the shopper's pick, or the first one in stock. Each size keeps its own
-  // price, so the price shown is always the price of the size that "Add" puts in the bag.
+  // price, so the price shown is always the price of the size that "Add" puts in the cart.
   const firstInStock = shownVariants.find((v) => v.in_stock) ?? shownVariants[0]
   const [picked, setPicked] = useState<string | null>(null)
   const variant = shownVariants.find((v) => v.variant_name === picked && v.in_stock) ?? firstInStock
@@ -56,7 +56,7 @@ export function ProductCard({ product, variants }: { product: Product; variants?
     if (timer.current !== null) window.clearInterval(timer.current)
   }, [])
 
-  const addToBag = () => {
+  const addToCart = () => {
     if (!variant?.in_stock) return
     add({
       product_id: product.product_id, variant_name: variant.variant_name, product_name: product.product_name,
@@ -123,14 +123,14 @@ export function ProductCard({ product, variants }: { product: Product; variants?
           {!inStock ? (
             <NotifyButton productId={product.product_id} productName={product.product_name} />
           ) : line ? (
-            // Already in the bag: the button becomes the bag's quantity for this size.
-            <div className="card-stepper" role="group" aria-label={`${label} in your bag`}>
+            // Already in the cart: the button becomes the cart's quantity for this size.
+            <div className="card-stepper" role="group" aria-label={`${label} in your cart`}>
               <button type="button" onClick={() => (line.quantity > 1 ? setQuantity(line.product_id, line.variant_name, line.quantity - 1) : remove(line.product_id, line.variant_name))}
-                aria-label={line.quantity > 1 ? `One less ${label}` : `Remove ${label} from bag`}>
+                aria-label={line.quantity > 1 ? `One less ${label}` : `Remove ${label} from cart`}>
                 {line.quantity > 1 ? <MinusIcon size={16} /> : <TrashIcon size={16} />}
               </button>
-              <output aria-live="polite" aria-label={`${line.quantity} in bag`}>
-                {line.quantity}<span className="card-stepper__unit"> in bag</span>
+              <output aria-live="polite" aria-label={`${line.quantity} in cart`}>
+                {line.quantity}<span className="card-stepper__unit"> in cart</span>
               </output>
               <button type="button" onClick={() => setQuantity(line.product_id, line.variant_name, line.quantity + 1)}
                 disabled={line.quantity >= MAX_QUANTITY} aria-label={`One more ${label}`}>
@@ -138,9 +138,9 @@ export function ProductCard({ product, variants }: { product: Product; variants?
               </button>
             </div>
           ) : (
-            <button type="button" className="product-card__add" onClick={addToBag} aria-label={`Add ${label} to bag`}>
-              <PlusIcon size={16} />
-              <span>Add to Bag</span>
+            <button type="button" className="product-card__add" onClick={addToCart} aria-label={`Add ${label} to cart`}>
+              <CartIcon size={16} />
+              <span>Add to cart</span>
             </button>
           )}
         </div>

@@ -8,7 +8,7 @@ import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../state/auth'
 import { useCart } from '../state/cart'
 import { useSignIn } from '../state/signIn'
-import { BagIcon, BlogIcon, BulkIcon, ChevronIcon, CloseIcon, LockIcon, MailIcon, MenuIcon, TruckIcon, UserIcon } from './Icons'
+import { CartIcon, BlogIcon, BulkIcon, ChevronIcon, CloseIcon, LockIcon, MailIcon, MenuIcon, TruckIcon, UserIcon } from './Icons'
 import { SearchBox } from './SearchBox'
 import { StoreLogo } from './StoreLogo'
 
@@ -20,7 +20,7 @@ export function Header() {
   const { openSignIn } = useSignIn()
   const categories = useFetch((signal) => getCategories(signal), 'categories')
   const [menuOpen, setMenuOpen] = useState(false)
-  // Checkout keeps the shopper on the task: no search or category menu, just the way back to the bag.
+  // Checkout keeps the shopper on the task: no search or category menu, just the way back to the cart.
   const checkout = useLocation().pathname === '/checkout'
 
   return (
@@ -47,7 +47,7 @@ export function Header() {
           <SearchBox />
         )}
 
-        <nav className="site-header__actions" aria-label="Your account and bag">
+        <nav className="site-header__actions" aria-label="Your account and cart">
           {!checkout && (
             session ? (
               <Link to="/account" className="icon-link" aria-label="My account and orders">
@@ -62,12 +62,12 @@ export function Header() {
               </button>
             )
           )}
-          <Link to="/cart" className="icon-link" aria-label={count > 0 ? `Bag, ${plural(count, 'item')}` : 'Bag, empty'}>
+          <Link to="/cart" className="icon-link" aria-label={count > 0 ? `Cart, ${plural(count, 'item')}` : 'Cart, empty'}>
             <span className="icon-link__icon">
-              <BagIcon />
+              <CartIcon />
               {count > 0 && <span className="badge" aria-hidden>{count > 99 ? '99+' : count}</span>}
             </span>
-            <span className="icon-link__label">Bag</span>
+            <span className="icon-link__label">Cart</span>
           </Link>
         </nav>
       </div>
@@ -76,7 +76,7 @@ export function Header() {
           Only categories with products come back from the API. */}
       {!checkout && (
         <nav className="category-bar" aria-label="Shop by category">
-          <div className="container category-bar__inner">
+          <div className="container">
             <ul className="category-bar__list">
               <li><NavLink to="/shop" end className="category-bar__link">Shop all</NavLink></li>
               {categories.data?.map((c) => (
@@ -86,8 +86,6 @@ export function Header() {
                   </NavLink>
                 </li>
               ))}
-            </ul>
-            <ul className="category-bar__list category-bar__list--aside">
               <li>
                 <NavLink to="/bulk-orders" className="category-bar__link category-bar__link--quiet">
                   <BulkIcon size={16} /> Bulk Orders
@@ -233,8 +231,8 @@ function CategoryMenu({ open, onClose, categories, signedIn }: { open: boolean; 
             </button>
           )}
           <Link to="/cart" className="menu-drawer__account">
-            <BagIcon size={20} />
-            Bag
+            <CartIcon size={20} />
+            Cart
           </Link>
         </div>
       </div>

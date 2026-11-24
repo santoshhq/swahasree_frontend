@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent, type MouseEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { FlavorLevelOptions } from '../../components/FlavorOptions'
 import { ErrorState, Loading } from '../../components/ui'
 import { createProduct, getAdminCategories, getAdminProduct, updateProduct, type AdminCategory, type AdminProduct, type AdminVariant } from '../../lib/adminApi'
 import { getAdminSession } from '../../lib/adminSession'
 import { useFetch } from '../../lib/useFetch'
-import { enabledFlavors, FLAVOR_FIELDS, FLAVOR_LABELS, FLAVOR_LEVELS } from '../../lib/flavor'
+import { enabledFlavors, FLAVOR_FIELDS, FLAVOR_LABELS, flavorLevelOrDefault } from '../../lib/flavor'
 import { AlertIcon, CloseIcon, DeleteIcon, EyeIcon, EyeOffIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon } from './AdminIcons'
 import { AdminPageHead, ConfirmButton, ConfirmDialog, Panel, Switch } from './AdminUi'
 import { panel } from '../../lib/panelPath'
@@ -127,9 +128,11 @@ function ProductForm({ categories, product }: { categories: AdminCategory[]; pro
   const [categoryId, setCategoryId] = useState(product?.category_id ?? (categories.length === 1 ? categories[0].category_id : ''))
   const [subCategory, setSubCategory] = useState(product?.sub_category ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
-  const [levels, setLevels] = useState({
-    spicy_level: product?.spicy_level ?? '', oil_level: product?.oil_level ?? '', salt_level: product?.salt_level ?? '',
-  })
+  const [levels, setLevels] = useState(() => ({
+    spicy_level: flavorLevelOrDefault(product?.spicy_level),
+    oil_level: flavorLevelOrDefault(product?.oil_level),
+    salt_level: flavorLevelOrDefault(product?.salt_level),
+  }))
   const [customization, setCustomization] = useState(product?.customization ?? {
     spicy_level: false, oil_level: false, salt_level: false, min_weight_kg: null,
   })
@@ -278,7 +281,7 @@ function ProductForm({ categories, product }: { categories: AdminCategory[]; pro
     form.set('category_id', categoryId)
     form.set('description', description.trim())
     for (const field of FLAVOR_FIELDS) {
-      if (levels[field] && levels[field] !== product?.[field]) form.set(field, levels[field])
+      if (levels[field] !== product?.[field]) form.set(field, levels[field])
     }
     form.set('customization', JSON.stringify({ ...customization, min_weight_kg: hasCustomization ? Number(minimum) : null }))
     form.set('status', String(visible))
@@ -388,20 +391,14 @@ function ProductForm({ categories, product }: { categories: AdminCategory[]; pro
 
           <Panel title="Flavour and customization">
             {FLAVOR_FIELDS.map((field) => (
-              <div className="pf-field" key={field}>
-                <div className="pf-field__top pf-flavor">
-                  <label htmlFor={field} className="admin-label">Standard {FLAVOR_LABELS[field].toLowerCase()} level</label>
-                  <div className="switch-row">
-                    <Switch checked={customization[field]} label={`Allow ${FLAVOR_LABELS[field].toLowerCase()} customization`}
-                      onChange={(on) => setCustomization((current) => ({ ...current, [field]: on }))} />
-                    <span>Allow customization</span>
-                  </div>
+              <div className="pf-field pf-flavor" key={field}>
+                <FlavorLevelOptions field={field} value={levels[field]}
+                  onChange={(level) => setLevels((current) => ({ ...current, [field]: level }))} />
+                <div className="switch-row">
+                  <Switch checked={customization[field]} label={`Allow ${FLAVOR_LABELS[field].toLowerCase()} customization`}
+                    onChange={(on) => setCustomization((current) => ({ ...current, [field]: on }))} />
+                  <span>Allow customization</span>
                 </div>
-                <select id={field} className="admin-input" value={levels[field]} onChange={(e) => setLevels({ ...levels, [field]: e.target.value })}>
-                  <option value="" disabled={!!product?.[field]}>Unspecified</option>
-                  {product?.[field] && !FLAVOR_LEVELS.some((level) => level === product[field]) && <option>{product[field]}</option>}
-                  {FLAVOR_LEVELS.map((level) => <option key={level}>{level}</option>)}
-                </select>
               </div>
             ))}
             {hasCustomization && (

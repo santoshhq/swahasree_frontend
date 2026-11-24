@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
-import { enabledFlavors } from '../lib/flavor'
-import type { CartLine, FlavorSelection, ProductCustomization } from '../lib/types'
+import { enabledFlavors, flavorMinimumGrams } from '../lib/flavor'
+import type { CartLine, FlavorField, FlavorLevel, FlavorSelection, ProductCustomization } from '../lib/types'
 
 // Prices and names are a copy from when the item was added, for showing the cart quickly.
 // The cart page refreshes them from the store, and the server prices the order itself.
@@ -25,12 +25,26 @@ export function cartFlavors(items: CartItem[]) {
   return groups
 }
 
+export function addCartItem(items: CartItem[], item: Omit<CartItem, 'quantity'>, quantity: number): CartItem[] {
+  const previous = items.find((line) => line.product_id === item.product_id && line.variant_name === item.variant_name)
+  const newLine = { ...previous, ...item, quantity: Math.min(MAX_QUANTITY, (previous?.quantity ?? 0) + quantity) }
+  const updated = previous ? items.map((line) => line === previous ? newLine : line) : [...items, newLine]
+  if (!item.customization && !item.customization_settings) return updated
+
+  const selection = item.customization && { ...cartFlavors(items).get(item.product_id)?.selection, ...item.customization }
+  return updated.map((line) => line.product_id === item.product_id ? {
+    ...line,
+    customization: selection ?? line.customization,
+    customization_settings: item.customization_settings ?? line.customization_settings,
+  } : line)
+}
+
 export function normalizeFlavors(items: CartItem[]): CartItem[] {
   const groups = cartFlavors(items)
   for (const group of groups.values()) {
-    const minimum = group.settings?.min_weight_kg
     if (!group.settings) continue
-    const valid = minimum && group.grams >= Math.round(1000 * minimum) ? enabledFlavors(group.settings) : []
+    const minimum = flavorMinimumGrams(group.settings)
+    const valid = minimum && group.grams >= minimum ? enabledFlavors(group.settings) : []
     for (const field of Object.keys(group.selection) as (keyof FlavorSelection)[]) {
       if (!valid.includes(field)) delete group.selection[field]
     }
@@ -51,6 +65,7 @@ export type CartState = {
   subtotal: number
   add: (item: Omit<CartItem, 'quantity'>, quantity: number) => void
   setQuantity: (productId: string, variantName: string, quantity: number) => void
+  setFlavor: (productId: string, field: FlavorField, level: FlavorLevel, settings?: ProductCustomization) => void
   remove: (productId: string, variantName: string) => void
   replace: (update: (items: CartItem[]) => CartItem[]) => void
   clear: () => void

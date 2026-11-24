@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { BagIcon, CardIcon, CashIcon, CheckIcon } from '../components/Icons'
+import { FlavorPanel } from '../components/FlavorOptions'
+import { CartIcon, CardIcon, CashIcon, CheckIcon } from '../components/Icons'
 import { NotifyButton } from '../components/NotifyButton'
 import { OfferBox } from '../components/Offers'
 import { ProductDescription } from '../components/ProductDescription'
@@ -11,12 +12,12 @@ import { RatingBadge } from '../components/Stars'
 import { BrandButton, ErrorState, Loading, ProductImage } from '../components/ui'
 import { ApiError, getCategoryProducts, getPaymentOptions, getProduct, isShownInStore } from '../lib/api'
 import { money } from '../lib/format'
-import { enabledFlavors, FLAVOR_FIELDS, FLAVOR_LABELS } from '../lib/flavor'
+import { flavorMinimumGrams } from '../lib/flavor'
 import { offersFor, useActiveOffers } from '../lib/offers'
 import { productJsonLd, snippet, usePageMeta } from '../lib/seo'
-import type { PaymentMethod, Product, RatingSummary } from '../lib/types'
+import type { FlavorSelection, PaymentMethod, Product, RatingSummary } from '../lib/types'
 import { useFetch } from '../lib/useFetch'
-import { useCart } from '../state/cart'
+import { addCartItem, cartFlavors, useCart } from '../state/cart'
 import { NotFoundPage } from './NotFoundPage'
 
 export function ProductPage() {
@@ -37,7 +38,7 @@ export function ProductPage() {
 }
 
 function ProductDetail({ product }: { product: Product }) {
-  const { add } = useCart()
+  const { add, items, setFlavor } = useCart()
   const images = product.product_imgs ?? []
   const [imageIndex, setImageIndex] = useState(0)
   // Start on the first size that can actually be bought.
@@ -46,8 +47,22 @@ function ProductDetail({ product }: { product: Product }) {
   )
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
+  const [draftFlavors, setDraftFlavors] = useState<FlavorSelection>({})
   const offers = offersFor(product, useActiveOffers())
   const variant = product.variants.find((v) => v.variant_name === variantName)
+  const pack = variant?.in_stock ? {
+    product_id: product.product_id, variant_name: variant.variant_name, product_name: product.product_name,
+    price: variant.price, image: images[0] ?? null, unavailable: false,
+    net_weight_grams: variant.net_weight_grams, customization_settings: product.customization,
+  } : null
+  const productItems = items.filter((item) => item.product_id === product.product_id)
+  const flavor = cartFlavors(productItems).get(product.product_id)
+  const gramsInCart = flavor?.grams ?? 0
+  const minimum = flavorMinimumGrams(product.customization)
+  const unlockedInCart = minimum > 0 && gramsInCart >= minimum
+  const previewGrams = pack && !added
+    ? cartFlavors(addCartItem(productItems, pack, quantity)).get(product.product_id)?.grams ?? 0
+    : gramsInCart
   // Starts from the product's numbers; a review posted on this page updates it.
   const [rating, setRating] = useState({ average: product.rating_average, count: product.rating_count })
   const onRatingChange = (r: RatingSummary) => setRating({ average: r.average, count: r.count })
@@ -69,13 +84,11 @@ function ProductDetail({ product }: { product: Product }) {
   // How this store takes payment, so the note under the button is true for it.
   const payment = useFetch((signal) => getPaymentOptions(product.product_id, signal), `payment-options|${product.product_id}`)
 
-  const addToBag = () => {
-    if (!variant?.in_stock) return
-    add({
-      product_id: product.product_id, variant_name: variant.variant_name, product_name: product.product_name,
-      price: variant.price, image: images[0] ?? null, unavailable: false,
-      net_weight_grams: variant.net_weight_grams, customization_settings: product.customization,
-    }, quantity)
+  const addToCart = () => {
+    if (!pack) return
+    const includeDraft = minimum > 0 && previewGrams >= minimum && Object.keys(draftFlavors).length > 0
+    add(includeDraft ? { ...pack, customization: draftFlavors } : pack, quantity)
+    setDraftFlavors({})
     setAdded(true)
   }
 
@@ -145,8 +158,8 @@ function ProductDetail({ product }: { product: Product }) {
           {variant?.in_stock ? (
             <div className="buy-row">
               <QuantityStepper value={quantity} onChange={(n) => { setQuantity(n); setAdded(false) }} label={product.product_name} />
-              <BrandButton onClick={addToBag} className={added ? 'is-added' : ''} icon={added ? <CheckIcon /> : <BagIcon size={18} />}>
-                {added ? 'Added to bag' : 'Add to bag'}
+              <BrandButton onClick={addToCart} className={added ? 'is-added' : ''} icon={added ? <CheckIcon /> : <CartIcon size={18} />}>
+                {added ? 'Added to cart' : 'Add to cart'}
               </BrandButton>
             </div>
           ) : (
@@ -155,16 +168,15 @@ function ProductDetail({ product }: { product: Product }) {
               <NotifyButton productId={product.product_id} productName={product.product_name} variant="page" />
             </div>
           )}
-          {added && <p className="added-note" role="status"><Link to="/cart">View your bag</Link> or keep shopping.</p>}
-          {!!product.customization?.min_weight_kg && enabledFlavors(product.customization).length > 0 && (
-            <p className="product-info__price-note">Customize in your bag when you add {product.customization.min_weight_kg} kg or more of this product.</p>
+          {added && <p className="added-note" role="status"><Link to="/cart">View your cart</Link> or keep shopping.</p>}
+          {product.variants.some((v) => v.in_stock && v.net_weight_grams) && (
+            <FlavorPanel name={product.product_name} grams={previewGrams} settings={product.customization}
+              selection={unlockedInCart ? flavor?.selection : draftFlavors} preview={!unlockedInCart}
+              onChange={(field, level) => {
+                if (unlockedInCart) setFlavor(product.product_id, field, level, product.customization)
+                else setDraftFlavors((current) => ({ ...current, [field]: level }))
+              }} />
           )}
-          {FLAVOR_FIELDS.some((field) => product[field]) && (
-            <dl className="product-flavour">
-              {FLAVOR_FIELDS.map((field) => product[field] && <div key={field}><dt>{FLAVOR_LABELS[field]}</dt><dd>{product[field]}</dd></div>)}
-            </dl>
-          )}
-
           {payment.data && <PaymentNote methods={payment.data.methods} />}
 
           {product.description && (

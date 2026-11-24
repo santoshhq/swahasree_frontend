@@ -256,7 +256,7 @@ function ThresholdPanel({ onToast }: { onToast: (t: ToastState) => void }) {
       {open && (
         <div id="threshold-body" className="threshold-panel__body">
           <p className="admin-hint admin-hint--tight">
-            Any PIN code gets free delivery once the bag, after the coupon, is worth this much. Checkout shows
+            Any PIN code gets free delivery once the cart, after the coupon, is worth this much. Checkout shows
             customers how much more to add. Only you see this setting: managers don't.
           </p>
           <form className="threshold-panel__form" onSubmit={submit} noValidate>

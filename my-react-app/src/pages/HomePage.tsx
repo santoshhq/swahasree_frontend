@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { HeroBanner } from '../components/HeroBanner'
-import { ArrowIcon, BagIcon, LockIcon, TruckIcon } from '../components/Icons'
+import { ArrowIcon, CartIcon, LockIcon, TruckIcon } from '../components/Icons'
 import { ProductSection } from '../components/ProductSection'
 import { RangeStrip } from '../components/RangeStrip'
 import { EmptyState, ErrorState, ProductGridSkeleton } from '../components/ui'
@@ -23,7 +23,7 @@ export function HomePage() {
 
       <div className="pantry-perks">
         <ul className="container">
-          <li><BagIcon size={20} /> Choose your pack size</li>
+          <li><CartIcon size={20} /> Choose your pack size</li>
           <li><TruckIcon size={20} /> Delivery by PIN code</li>
           <li><LockIcon size={20} /> Secure checkout</li>
         </ul>
@@ -44,6 +44,7 @@ export function HomePage() {
           <div>
             {categories.data.map((category) => (
               <Link key={category.category_id} to={`/category/${category.category_id}`}>
+                {category.image_url && <img src={category.image_url} alt="" loading="lazy" width={48} height={48} />}
                 {titleCase(category.category_name)} <ArrowIcon size={16} />
               </Link>
             ))}

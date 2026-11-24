@@ -51,7 +51,7 @@ export function offerRule(o: Pick<ShopOffer, 'offer_type' | 'buy_quantity' | 'ge
   return `Buy ${o.buy_quantity}, get ${o.get_quantity > 1 ? `${o.get_quantity} × ` : ''}${gift}${o.gift ? ' free' : ''}`
 }
 
-/** The free items the bag gets right now; asked again whenever the bag changes. */
+/** The free items the cart gets right now; asked again whenever the cart changes. */
 export function useOfferPreview(lines: CartLine[]): OfferPreview | null {
   const key = lines.map((l) => `${l.product_id}:${l.variant_name}:${l.quantity}`).join(',')
   const preview = useFetch(

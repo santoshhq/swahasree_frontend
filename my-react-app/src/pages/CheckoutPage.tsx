@@ -5,18 +5,17 @@ import { AddressForm } from '../components/AddressForm'
 import { CheckoutSteps } from '../components/CheckoutSteps'
 import { useConfetti } from '../components/Confetti'
 import { OfferNudges } from '../components/Offers'
-import { BagIcon, CardIcon, CashIcon, EditIcon, GiftIcon, LockIcon, PinIcon, PlusIcon, TruckIcon, UserIcon } from '../components/Icons'
+import { CartIcon, CardIcon, CashIcon, EditIcon, GiftIcon, LockIcon, PinIcon, PlusIcon, TruckIcon, UserIcon } from '../components/Icons'
 import { BrandButton, ProductImage } from '../components/ui'
 import { ApiError, getMyAddresses, getPaymentOptions, getShippingQuote, placeOrder, validateCoupon, verifyPayment } from '../lib/api'
 import { ADDRESS_TYPES } from '../lib/addresses'
-import { flavorSummary } from '../lib/flavor'
 import { useOfferPreview } from '../lib/offers'
 import { money, plural, taxIncluded } from '../lib/format'
 import { payWithRazorpay } from '../lib/razorpay'
 import type { Customer, CouponQuote, OrderItem, PaymentMethod, SavedAddress } from '../lib/types'
 import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../state/auth'
-import { orderLine, useCart, type CartItem } from '../state/cart'
+import { normalizeFlavors, orderLine, useCart, type CartItem } from '../state/cart'
 import { useSignIn } from '../state/signIn'
 import { usePageMeta } from '../lib/seo'
 
@@ -48,24 +47,24 @@ export function CheckoutPage() {
   return <CheckoutForm key={session.token} token={session.token} customer={session.customer} />
 }
 
-// Title, what's in the bag and its price, and the way back to the bag.
+// Title, what's in the cart and its price, and the way back to the cart.
 function CheckoutHead({ itemCount, subtotal }: { itemCount: number; subtotal: number }) {
   return (
     <header className="checkout__head">
       <div>
         <h1>Checkout</h1>
         <p className="checkout__meta">
-          <span className="checkout__chip"><BagIcon size={15} /> {plural(itemCount, 'item')}</span>
+          <span className="checkout__chip"><CartIcon size={15} /> {plural(itemCount, 'item')}</span>
           <span className="checkout__chip checkout__chip--price">Subtotal <strong>{money(subtotal)}</strong></span>
           <span className="checkout__meta-note">Delivery is charged by PIN code</span>
         </p>
       </div>
-      <Link to="/cart" className="checkout__back"><EditIcon size={14} /> Edit bag</Link>
+      <Link to="/cart" className="checkout__back"><EditIcon size={14} /> Edit cart</Link>
     </header>
   )
 }
 
-// The bag's lines in the summary: a quantity badge on the photo, then the size, count and unit price.
+// The cart's lines in the summary: a quantity badge on the photo, then the size, count and unit price.
 function SummaryItems({ items, freeItems }: { items: CartItem[]; freeItems: OrderItem[] }) {
   return (
     <ul className="summary__items">
@@ -78,7 +77,6 @@ function SummaryItems({ items, freeItems }: { items: CartItem[]; freeItems: Orde
           <span className="summary__item-name">
             {i.product_name}
             <small>{i.variant_name} · Qty {i.quantity}{i.quantity > 1 && <> × {money(i.price)}</>}</small>
-            {i.customization && <small>{flavorSummary(i.customization)}</small>}
           </span>
           <span className="summary__item-price">{money(i.price * i.quantity)}</span>
         </li>
@@ -101,7 +99,7 @@ function CheckoutSignIn() {
   const { expiredEmail } = useAuth()
   const { openSignIn } = useSignIn()
   const { items, subtotal } = useCart()
-  const available = items.filter((i) => !i.unavailable)
+  const available = normalizeFlavors(items).filter((i) => !i.unavailable)
   const itemCount = available.reduce((n, l) => n + l.quantity, 0)
   const offerPreview = useOfferPreview(available.map(({ product_id, variant_name, quantity }) => ({ product_id, variant_name, quantity })))
 
@@ -117,7 +115,7 @@ function CheckoutSignIn() {
     <div className="container page checkout">
       <CheckoutHead itemCount={itemCount} subtotal={subtotal} />
 
-      {/* Signed out: the bag is done, signing in is the start of the address step. */}
+      {/* Signed out: the cart is done, signing in is the start of the address step. */}
       <CheckoutSteps current={2} />
 
       <div className="checkout-layout">
@@ -125,17 +123,17 @@ function CheckoutSignIn() {
           <span className="checkout-signin__icon" aria-hidden><UserIcon size={24} /></span>
           <h2 id="checkout-signin-title">Sign in to continue</h2>
           {expiredEmail ? (
-            <p className="notice notice--warn" role="status">Your sign-in has ended. Please continue with Google again. Your bag is saved.</p>
+            <p className="notice notice--warn" role="status">Your sign-in has ended. Please continue with Google again. Your cart is saved.</p>
           ) : (
             <p className="checkout-signin__lead">Use your Google account to place your order.</p>
           )}
           {/* In case the popup was closed: open it again. */}
           <BrandButton type="button" aria-haspopup="dialog" onClick={() => openSignIn({ purpose: 'checkout' })}>Sign in to continue</BrandButton>
-          <p className="checkout-signin__note"><LockIcon size={14} /> Your bag is saved while you sign in.</p>
+          <p className="checkout-signin__note"><LockIcon size={14} /> Your cart is saved while you sign in.</p>
         </section>
 
         <aside className="summary" aria-label="Order summary">
-          <h2><BagIcon size={20} /> Your order <span className="summary__count">{plural(itemCount, 'item')}</span></h2>
+          <h2><CartIcon size={20} /> Your order <span className="summary__count">{plural(itemCount, 'item')}</span></h2>
           <SummaryItems items={available} freeItems={offerPreview?.free_items ?? []} />
           <dl className="summary__rows">
             <div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div>
@@ -155,6 +153,7 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
   const navigate = useNavigate()
   const { signOut } = useAuth()
   const { items, subtotal } = useCart()
+  const available = normalizeFlavors(items).filter((i) => !i.unavailable)
   const [notes, setNotes] = useState('')
   const [placing, setPlacing] = useState(false)
   // What the button is waiting on, so the customer knows the payment window is coming.
@@ -189,19 +188,19 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
   const noAddresses = addresses.data !== null && saved.length === 0
   const showingForm = editor !== null || noAddresses
 
-  // The sign-in lasts a day; after that, back to "Continue with Google" (the bag is kept).
+  // The sign-in lasts a day; after that, back to "Continue with Google" (the cart is kept).
   const addressesExpired = isExpired(addresses.error)
   useEffect(() => {
     if (addressesExpired) signOut('expired')
   }, [addressesExpired, signOut])
 
-  const lines = items.filter((i) => !i.unavailable).map(({ product_id, variant_name, quantity }) => ({ product_id, variant_name, quantity }))
+  const lines = available.map(({ product_id, variant_name, quantity }) => ({ product_id, variant_name, quantity }))
   // Free items from offers: shown in the summary, and added to the order by the backend.
   const offerPreview = useOfferPreview(lines)
   const freeItems = offerPreview?.free_items ?? []
-  // The store decides which payment methods it takes; any product in the bag identifies the store.
+  // The store decides which payment methods it takes; any product in the cart identifies the store.
   const firstProduct = lines[0]?.product_id ?? ''
-  // An empty bag redirects below, so there is nothing to ask the server about.
+  // An empty cart redirects below, so there is nothing to ask the server about.
   const paymentOptions = useFetch(
     (signal) => (firstProduct ? getPaymentOptions(firstProduct, signal) : Promise.resolve(null)),
     `payment-options|${firstProduct}`,
@@ -211,12 +210,12 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
 
   // Delivery charge from Shiprocket to the chosen address's PIN code; asked again when the address,
   // the payment method (cash on delivery costs more to ship), the coupon (delivery is free above the
-  // store's order value, counted after the discount) or the bag changes.
+  // store's order value, counted after the discount) or the cart changes.
   const pincode = !showingForm && selected ? selected.PIN_code : ''
   const pinReady = /^[1-9]\d{5}$/.test(pincode)
-  const bagKey = lines.map((l) => `${l.product_id}:${l.variant_name}:${l.quantity}`).join(',')
+  const cartKey = lines.map((l) => `${l.product_id}:${l.variant_name}:${l.quantity}`).join(',')
   const couponCode = coupon?.code ?? null
-  const shippingKey = pinReady && method ? `${pincode}|${method}|${couponCode ?? ''}|${bagKey}` : ''
+  const shippingKey = pinReady && method ? `${pincode}|${method}|${couponCode ?? ''}|${cartKey}` : ''
   const shipping = useFetch(
     (signal) => (shippingKey && method ? getShippingQuote(pincode, lines, method, couponCode, signal, token) : Promise.resolve(null)),
     `shipping|${shippingKey}`,
@@ -305,7 +304,7 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
             state: a.State,
             pincode: a.PIN_code,
           },
-          items: items.filter((item) => !item.unavailable).map(orderLine),
+          items: available.map(orderLine),
           coupon_code: coupon?.code,
           payment_method: method,
           notes: notes.trim() || undefined,
@@ -324,8 +323,8 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
         startNewOrder()
         throw new Error('That payment attempt expired. Press Pay again to start a new one.')
       }
-      // The confirmation page empties the bag. Emptying it here would re-render this page with
-      // no items before the navigation lands, and its "empty bag" redirect to /cart would win.
+      // The confirmation page empties the cart. Emptying it here would re-render this page with
+      // no items before the navigation lands, and its "empty cart" redirect to /cart would win.
       navigate('/order-placed', { replace: true, state: { order: placed } })
     } catch (err) {
       if (isExpired(err as Error)) {
@@ -490,8 +489,8 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
         </div>
 
         <aside className="summary" aria-label="Order summary">
-          <h2><BagIcon size={20} /> Your order <span className="summary__count">{plural(itemCount, 'item')}</span></h2>
-          <SummaryItems items={items.filter((i) => !i.unavailable)} freeItems={freeItems} />
+          <h2><CartIcon size={20} /> Your order <span className="summary__count">{plural(itemCount, 'item')}</span></h2>
+          <SummaryItems items={available} freeItems={freeItems} />
           <OfferNudges nudges={offerPreview?.nudges ?? []} />
 
           <div className="coupon" ref={couponBox}>
@@ -556,7 +555,7 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
             {prepaid
               ? <>You'll pay {money(total)} in Razorpay's secure window. Your order is confirmed once the payment goes through. </>
               : <>By placing the order you agree to pay {money(total)} in cash on delivery. </>}
-            <Link to="/cart">Edit bag</Link>
+            <Link to="/cart">Edit cart</Link>
           </p>
           {prepaid && <p className="checkout__secure"><LockIcon size={14} /> Payments are processed securely by Razorpay</p>}
         </aside>

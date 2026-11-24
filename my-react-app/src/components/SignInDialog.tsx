@@ -5,7 +5,7 @@ import { useAuth } from '../state/auth'
 import { useCart } from '../state/cart'
 import type { SignInOptions } from '../state/signIn'
 import { GoogleSignInButton } from './GoogleSignInButton'
-import { BagIcon, CloseIcon, LockIcon } from './Icons'
+import { CartIcon, CloseIcon, LockIcon } from './Icons'
 
 /**
  * The sign-in popup (opened with useSignIn().openSignIn()): a modal <dialog>, centred on laptops and
@@ -26,7 +26,7 @@ export function SignInDialog({ open, purpose, from, onClose }: {
   const { expiredEmail } = useAuth()
   const { items, subtotal } = useCart()
   const checkout = purpose === 'checkout'
-  const bagCount = items.filter((i) => !i.unavailable).reduce((n, i) => n + i.quantity, 0)
+  const cartCount = items.filter((i) => !i.unavailable).reduce((n, i) => n + i.quantity, 0)
 
   useEffect(() => {
     const dialog = ref.current
@@ -51,12 +51,12 @@ export function SignInDialog({ open, purpose, from, onClose }: {
           <>
             <h2 id={titleId} className="signin-dialog__title">Sign in to resume checkout</h2>
             <p id={leadId} className="signin-dialog__lead">
-              Your bag is saved. Sign in with Google and you'll go straight on to delivery and payment.
+              Your cart is saved. Sign in with Google and you'll go straight on to delivery and payment.
             </p>
-            {bagCount > 0 && (
-              <p className="signin-dialog__bag">
-                <BagIcon size={16} />
-                <span>{plural(bagCount, 'item')} in your bag</span>
+            {cartCount > 0 && (
+              <p className="signin-dialog__cart">
+                <CartIcon size={16} />
+                <span>{plural(cartCount, 'item')} in your cart</span>
                 <strong>{money(subtotal)}</strong>
               </p>
             )}
@@ -83,8 +83,8 @@ export function SignInDialog({ open, purpose, from, onClose }: {
         </p>
 
         {checkout ? (
-          // From the bag or from the checkout page: either way, back to the bag.
-          <Link to="/cart" className="signin-dialog__continue" onClick={onClose}>Back to bag</Link>
+          // From the cart or from the checkout page: either way, back to the cart.
+          <Link to="/cart" className="signin-dialog__continue" onClick={onClose}>Back to cart</Link>
         ) : (
           // Back to the page the shopper was on.
           <button type="button" className="signin-dialog__continue" onClick={onClose}>Continue shopping</button>

@@ -18,7 +18,7 @@ export type PageMeta = {
   title?: string
   description?: string
   image?: string
-  // Pages that shouldn't be in search results (bag, checkout, account, search results, not found).
+  // Pages that shouldn't be in search results (cart, checkout, account, search results, not found).
   noindex?: boolean
   // The page's original address when it isn't this one (a blog post first published elsewhere).
   canonical?: string

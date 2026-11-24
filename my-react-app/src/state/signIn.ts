@@ -4,7 +4,7 @@ export type SignInOptions = {
   // A page to go to once signed in (e.g. back to a product with ?notify=). Without it the shopper
   // stays where they are, which then shows them signed in.
   from?: string
-  // checkout: opened on the way to checkout, so the popup says the bag is waiting.
+  // checkout: opened on the way to checkout, so the popup says the cart is waiting.
   purpose?: 'checkout'
 }
 

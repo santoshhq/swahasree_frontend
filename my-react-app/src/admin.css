@@ -2533,6 +2533,17 @@ select.admin-input {
   font-weight: 600;
 }
 
+img.category-name__avatar,
+.category-image-preview {
+  object-fit: cover;
+}
+
+.category-image-preview {
+  width: 104px;
+  height: 104px;
+  border-radius: 10px;
+}
+
 .category-name__title {
   display: block;
   color: var(--forest);
@@ -2754,72 +2765,6 @@ select.admin-input {
   border-radius: 10px;
   background: var(--mint);
   font-size: 0.875rem;
-}
-
-/* The home page picture a category opens from: the ten illustrations plus "None". */
-.tile-picker {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 8px;
-}
-
-.tile-picker__option {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  gap: 4px;
-  padding: 8px 6px;
-  border: 1.5px solid var(--panel-line);
-  border-radius: 12px;
-  background: var(--white);
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.tile-picker__option:hover {
-  border-color: #c6a9ac;
-}
-
-.tile-picker__option.is-selected {
-  border-color: var(--forest);
-  background: var(--mint);
-  box-shadow: 0 0 0 1px var(--forest);
-}
-
-.tile-picker__option:has(input:focus-visible) {
-  outline: 2px solid var(--forest);
-  outline-offset: 2px;
-}
-
-.tile-picker__option img,
-.tile-picker__none {
-  width: 56px;
-  height: 56px;
-}
-
-.tile-picker__none {
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--admin-bg);
-  color: var(--ink-soft);
-  font-size: 1.25rem;
-}
-
-.tile-picker__label {
-  color: var(--ink);
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1.25;
-}
-
-.tile-picker__owner {
-  color: var(--ink-soft);
-  font-size: 0.6875rem;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
 }
 
 .modal-note--warn {
@@ -6344,5 +6289,5 @@ select.admin-input {
 
 .admin-sidebar__logo img.admin-sidebar__logo-full { width: 156px; height: auto; }
 .admin-login__logo img { object-fit: contain; }
-.pf-flavor { align-items: center; flex-wrap: wrap; }
+.pf-flavor { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .pf-flavor .switch-row { margin: 0; }

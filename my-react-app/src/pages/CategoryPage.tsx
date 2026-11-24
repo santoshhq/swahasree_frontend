@@ -47,7 +47,8 @@ export function CategoryPage() {
         {subCategory ? <Link to={`/category/${categoryId}`}>{category.category_name}</Link> : <span aria-current="page">{category.category_name}</span>}
         {subCategory && <><span aria-hidden>/</span><span aria-current="page">{subCategory}</span></>}
       </nav>
-      <header className="page-head">
+      <header className="page-head category-page-head">
+        {category.image_url && !subCategory && <img src={category.image_url} alt="" width={96} height={96} />}
         <h1>{subCategory ?? category.category_name}</h1>
       </header>
 

@@ -57,7 +57,7 @@ const POLICIES: Record<PolicyId, Policy> = {
       },
       {
         heading: 'On your device',
-        paragraphs: ['Your browser keeps your bag, your sign-in and the address you last used, so you do not have to enter them again. Signing out or clearing your browser data removes them.'],
+        paragraphs: ['Your browser keeps your cart, your sign-in and the address you last used, so you do not have to enter them again. Signing out or clearing your browser data removes them.'],
       },
       {
         heading: 'Your choices',

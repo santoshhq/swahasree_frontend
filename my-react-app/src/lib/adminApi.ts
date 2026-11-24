@@ -35,6 +35,7 @@ export type AdminProduct = {
 export type AdminCategory = {
   category_id: string
   category_name: string
+  image_url?: string | null
   // product_count per sub-category is counted live from the products.
   sub_categories: { name: string; product_count?: number }[] | null
   added_product_count: number | null
@@ -381,20 +382,38 @@ export const ENQUIRIES_CHANGED_EVENT = 'swahasree:enquiries-changed'
 export const getAdminCategories = (signal?: AbortSignal) =>
   adminRequest<AdminCategory[]>('/categories/get_admin_categories', { signal })
 
-// rangeTile: the home page picture this category opens from (one taken by another category moves here).
-export const createCategory = (name: string, subCategories: string[], rangeTile: RangeTileKey | null) =>
-  adminRequest<{ message: string }>('/categories/create-category', {
+type CategoryInput = {
+  name: string
+  sub_categories: { name: string }[]
+  rename_sub_categories?: Record<string, string>
+  remove_image?: boolean
+}
+
+function categoryBody(input: CategoryInput, image?: File) {
+  if (!image) return input
+  const form = new FormData()
+  form.append('data', JSON.stringify(input))
+  form.append('image', image)
+  return form
+}
+
+export const createCategory = (name: string, subCategories: string[], image?: File) =>
+  adminRequest<{ message: string }>(`/categories/create-category${image ? '/with-image' : ''}`, {
     method: 'POST',
-    body: { name, sub_categories: subCategories.map((s) => ({ name: s })), range_tile: rangeTile },
+    body: categoryBody({ name, sub_categories: subCategories.map((s) => ({ name: s })) }, image),
   })
 
 // renames: old sub-category name -> new name, so the backend moves those products along.
 export const updateCategory = (
-  categoryId: string, name: string, subCategories: string[], renames: Record<string, string>, rangeTile: RangeTileKey | null,
+  categoryId: string, name: string, subCategories: string[], renames: Record<string, string>,
+  image?: File, removeImage = false,
 ) =>
-  adminRequest<{ message: string; category: AdminCategory; products_moved: number }>(`/categories/${encodeURIComponent(categoryId)}`, {
+  adminRequest<{ message: string; category: AdminCategory; products_moved: number }>(`/categories/${encodeURIComponent(categoryId)}${image ? '/with-image' : ''}`, {
     method: 'PATCH',
-    body: { name, sub_categories: subCategories.map((s) => ({ name: s })), rename_sub_categories: renames, range_tile: rangeTile },
+    body: categoryBody({
+      name, sub_categories: subCategories.map((s) => ({ name: s })), rename_sub_categories: renames,
+      remove_image: removeImage,
+    }, image),
   })
 
 export const deleteCategory = (categoryId: string) =>

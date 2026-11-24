@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import { SearchIcon } from '../../components/Icons'
 import { ErrorState, Loading } from '../../components/ui'
@@ -9,7 +9,7 @@ import { useFetch } from '../../lib/useFetch'
 import { DeleteIcon, EditIcon, TagIcon } from './AdminIcons'
 import { AdminPageHead, ConfirmButton, Modal, Toast } from './AdminUi'
 import { panel } from '../../lib/panelPath'
-import { RANGE_TILES, type RangeTileKey } from '../../lib/rangeTiles'
+import { RANGE_TILES } from '../../lib/rangeTiles'
 
 type PopupState = { mode: 'create' } | { mode: 'edit'; category: AdminCategory } | null
 type ToastState = { message: string; kind: 'success' | 'error' } | null
@@ -92,7 +92,9 @@ export function CategoriesPage() {
                       <tr key={c.category_id}>
                         <td>
                           <button className="category-name" onClick={() => setPopup({ mode: 'edit', category: c })} disabled={!can.edit}>
-                            <span className="category-name__avatar" aria-hidden>{c.category_name.charAt(0).toUpperCase()}</span>
+                            {c.image_url
+                              ? <img className="category-name__avatar" src={c.image_url} alt="" loading="lazy" />
+                              : <span className="category-name__avatar" aria-hidden>{c.category_name.charAt(0).toUpperCase()}</span>}
                             <span>
                               <span className="category-name__title">{c.category_name}</span>
                               <span className="table__sub">
@@ -158,7 +160,6 @@ export function CategoriesPage() {
         <CategoryPopup
           key={popup.mode === 'edit' ? popup.category.category_id : 'new'}
           state={popup}
-          categories={all}
           onClose={() => setPopup(null)}
           onSaved={(message) => { setPopup(null); setToast({ message, kind: 'success' }); categories.reload() }}
           onError={(message) => setToast({ message, kind: 'error' })}
@@ -172,10 +173,8 @@ export function CategoriesPage() {
 
 type SubRow = { key: string; original: string | null; name: string; count: number }
 
-function CategoryPopup({ state, categories, onClose, onSaved, onError, onDelete }: {
+function CategoryPopup({ state, onClose, onSaved, onError, onDelete }: {
   state: Exclude<PopupState, null>
-  // Every category, to show which home page pictures are already linked to another one.
-  categories: AdminCategory[]
   onClose: () => void
   onSaved: (message: string) => void
   onError: (message: string) => void
@@ -188,10 +187,11 @@ function CategoryPopup({ state, categories, onClose, onSaved, onError, onDelete 
     () => (category?.sub_categories ?? []).map((s) => ({ key: s.name, original: s.name, name: s.name, count: s.product_count ?? 0 })),
   )
   const [newSub, setNewSub] = useState('')
-  const [rangeTile, setRangeTile] = useState<RangeTileKey | null>(category?.range_tile ?? null)
-  // The category each picture is linked to now, other than this one.
-  const tileOwner = (key: RangeTileKey) => categories.find((c) => c.range_tile === key && c.category_id !== category?.category_id)
-  const movedFrom = rangeTile ? tileOwner(rangeTile) : undefined
+  const [image, setImage] = useState<{ file: File; preview: string } | null>(null)
+  const [removeImage, setRemoveImage] = useState(false)
+  const preview = image?.preview ?? (removeImage ? null : category?.image_url)
+  const objectUrl = image?.preview
+  useEffect(() => () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }, [objectUrl])
   const [problem, setProblem] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -231,11 +231,11 @@ function CategoryPopup({ state, categories, onClose, onSaved, onError, onDelete 
     setSaving(true)
     try {
       if (!category) {
-        await createCategory(name.trim(), trimmed, rangeTile)
+        await createCategory(name.trim(), trimmed, image?.file)
         onSaved(`${name.trim()} was created.`)
       } else {
         const renames = Object.fromEntries(renamed.map((r) => [r.original as string, r.name.trim()]))
-        const res = await updateCategory(category.category_id, name.trim(), trimmed, renames, rangeTile)
+        const res = await updateCategory(category.category_id, name.trim(), trimmed, renames, image?.file, removeImage)
         onSaved(`${name.trim()} was saved.${res.products_moved ? ` ${plural(res.products_moved, 'product')} moved to the renamed sub-categories.` : ''}`)
       }
     } catch (err) {
@@ -264,6 +264,35 @@ function CategoryPopup({ state, categories, onClose, onSaved, onError, onDelete 
           <label htmlFor="cat-name" className="admin-label">Category name</label>
           <input id="cat-name" className="admin-input" maxLength={100} value={name} autoFocus
             onChange={(e) => { setName(e.target.value); setProblem(null) }} placeholder="e.g. Grains & Pulses" />
+        </div>
+
+        <div className="admin-field">
+          <label htmlFor="cat-image" className="admin-label">Category image <span className="muted">(optional)</span></label>
+          {preview && <img className="category-image-preview" src={preview} alt="Category image preview" />}
+          <input
+            id="cat-image" className="admin-input" type="file" accept="image/jpeg,image/png,image/webp"
+            aria-describedby="cat-image-hint" disabled={saving}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              if (file.type && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return setProblem('Choose a JPEG, PNG or WebP image.')
+              if (file.size > 5 * 1024 * 1024) return setProblem('Choose an image that is 5 MB or smaller.')
+              setImage({ file, preview: URL.createObjectURL(file) })
+              setRemoveImage(false)
+              setProblem(null)
+            }}
+          />
+          {image && <p className="admin-hint">Selected image: {image.file.name}</p>}
+          <p className="admin-hint" id="cat-image-hint">JPEG, PNG or WebP up to 5 MB. The image appears alongside the category on the storefront.</p>
+          {(image || category?.image_url) && (
+            <div>
+              <button type="button" className="admin-button admin-button--ghost" disabled={saving}
+                onClick={() => { if (image) setImage(null); else setRemoveImage(!removeImage) }}>
+                {image ? 'Discard selected image' : removeImage ? 'Keep current image' : 'Remove image'}
+              </button>
+            </div>
+          )}
         </div>
 
         <section className="modal-section" aria-labelledby="subs-title">
@@ -322,39 +351,6 @@ function CategoryPopup({ state, categories, onClose, onSaved, onError, onDelete 
             <p className="modal-note modal-note--warn">
               {removedWithProducts.map((s) => `${s.name} (${plural(s.product_count ?? 0, 'product')})`).join(', ')}{' '}
               {removedWithProducts.length === 1 ? 'still has' : 'still have'} products. They'll need a new sub-category the next time they're edited.
-            </p>
-          )}
-        </section>
-
-        <section className="modal-section" aria-labelledby="tile-title">
-          <div className="modal-section__head">
-            <h3 id="tile-title">Home page picture</h3>
-            <span className="muted">Optional</span>
-          </div>
-          <p className="admin-hint">
-            Choose the picture under the home page banner that opens this category. A picture with no category shows “No products found”.
-          </p>
-          <div className="tile-picker" role="radiogroup" aria-labelledby="tile-title">
-            <label className={`tile-picker__option tile-picker__option--none${rangeTile === null ? ' is-selected' : ''}`}>
-              <input type="radio" name="range-tile" className="visually-hidden" checked={rangeTile === null} onChange={() => setRangeTile(null)} />
-              <span className="tile-picker__none" aria-hidden>—</span>
-              <span className="tile-picker__label">None</span>
-            </label>
-            {RANGE_TILES.map((t) => {
-              const owner = tileOwner(t.key)
-              return (
-                <label key={t.key} className={`tile-picker__option${rangeTile === t.key ? ' is-selected' : ''}`}>
-                  <input type="radio" name="range-tile" className="visually-hidden" checked={rangeTile === t.key} onChange={() => setRangeTile(t.key)} />
-                  <img src={t.icon} alt="" width={64} height={64} />
-                  <span className="tile-picker__label">{t.label}</span>
-                  {owner && <span className="tile-picker__owner">Now: {owner.category_name}</span>}
-                </label>
-              )
-            })}
-          </div>
-          {movedFrom && (
-            <p className="modal-note">
-              This picture opens {movedFrom.category_name} now. Saving moves it to {name.trim() || 'this category'}.
             </p>
           )}
         </section>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { CheckIcon } from '../components/Icons'
-import { FreeBagLines } from '../components/Offers'
+import { FreeCartLines } from '../components/Offers'
 import { PayPendingOrder } from '../components/PayPendingOrder'
 import { SignInPrompt } from '../components/SignInPrompt'
 import { StatusPill } from '../components/StatusPill'
@@ -65,19 +65,19 @@ export function OrderDetailPage() {
       <div className="checkout-layout">
         <section aria-labelledby="items-title">
           <h2 id="items-title" className="visually-hidden">Items</h2>
-          <ul className="bag-list">
+          <ul className="cart-list">
             {order.items.filter((item) => !item.is_free).map((item) => (
-              <li key={`${item.product_id}|${item.variant_name}`} className="bag-line bag-line--static">
-                <span className="bag-line__image"><ProductImage src={item.image} alt="" /></span>
-                <div className="bag-line__info">
-                  <span className="bag-line__name">{item.product_name}</span>
-                  <span className="bag-line__variant">{item.variant_name} × {item.quantity}</span>
-                  <span className="bag-line__unit">{money(item.unit_price)} each</span>
+              <li key={`${item.product_id}|${item.variant_name}`} className="cart-line cart-line--static">
+                <span className="cart-line__image"><ProductImage src={item.image} alt="" /></span>
+                <div className="cart-line__info">
+                  <span className="cart-line__name">{item.product_name}</span>
+                  <span className="cart-line__variant">{item.variant_name} × {item.quantity}</span>
+                  <span className="cart-line__unit">{money(item.unit_price)} each</span>
                 </div>
-                <p className="bag-line__total price">{money(item.line_total)}</p>
+                <p className="cart-line__total price">{money(item.line_total)}</p>
               </li>
             ))}
-            <FreeBagLines items={order.items.filter((item) => item.is_free)} />
+            <FreeCartLines items={order.items.filter((item) => item.is_free)} />
           </ul>
 
           <div className="detail-grid">

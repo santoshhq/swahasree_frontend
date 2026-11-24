@@ -104,6 +104,7 @@ export type SubCategory = { name: string; product_count: number }
 export type Category = {
   category_id: string
   category_name: string
+  image_url?: string | null
   product_count: number
   sub_categories: SubCategory[]
 }
@@ -168,7 +169,7 @@ export type ShopOffer = {
   max_rewards_per_order: number | null
 }
 
-// What an order (or the bag, before ordering) got from one offer.
+// What an order (or the cart, before ordering) got from one offer.
 export type AppliedOffer = {
   offer_id: string
   title: string
@@ -180,7 +181,7 @@ export type AppliedOffer = {
   free_value: number
 }
 
-// "Add 1 more to get ...", or why an offer the bag qualifies for can't give its item.
+// "Add 1 more to get ...", or why an offer the cart qualifies for can't give its item.
 export type OfferNudge = { offer_id: string; title: string; short_by: number; message: string }
 
 export type OfferPreview = { free_items: OrderItem[]; applied: AppliedOffer[]; nudges: OfferNudge[] }
@@ -332,7 +333,7 @@ export type CouponQuote = {
 
 // POST /shipping/quote: Shiprocket's cheapest courier to that PIN code, rounded up to the rupee.
 // free_shipping: shipping_fee is 0, because the PIN code is in one of the store's free delivery
-// ranges (reason "zone") or the bag, after the coupon, reached the store's threshold ("min_order").
+// ranges (reason "zone") or the cart, after the coupon, reached the store's threshold ("min_order").
 export type ShippingQuote = {
   pincode: string
   shipping_fee: number
