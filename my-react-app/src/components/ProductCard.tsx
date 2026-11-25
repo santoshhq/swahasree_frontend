@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { isShownInStore } from '../lib/api'
-import { shortName, titleCase } from '../lib/display'
+import { titleCase } from '../lib/display'
 import { money } from '../lib/format'
 import { offersFor, useActiveOffers } from '../lib/offers'
 import type { Product, Variant } from '../lib/types'
@@ -94,7 +94,7 @@ export function ProductCard({ product, variants }: { product: Product; variants?
       </Link>
       <div className="product-card__body">
         <p className="product-card__category">{titleCase(product.sub_category || product.category_name)}</p>
-        <h3 className="product-card__name" title={product.product_name}><Link to={url}>{shortName(product.product_name)}</Link></h3>
+        <h3 className="product-card__name" title={product.product_name}><Link to={url}>{product.product_name}</Link></h3>
 
         {several && inStock ? (
           <div className="product-card__size">

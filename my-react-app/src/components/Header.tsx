@@ -1,10 +1,8 @@
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
-import { getCategories } from '../lib/api'
 import { titleCase } from '../lib/display'
 import { plural } from '../lib/format'
 import type { Category } from '../lib/types'
-import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../state/auth'
 import { useCart } from '../state/cart'
 import { useSignIn } from '../state/signIn'
@@ -14,11 +12,10 @@ import { StoreLogo } from './StoreLogo'
 
 // The header stays pinned to the top on every screen. On phones the category bar gives way to a
 // menu button that slides the categories in from the left (CategoryMenu).
-export function Header() {
+export function Header({ categories }: { categories: Category[] }) {
   const { count } = useCart()
   const { session } = useAuth()
   const { openSignIn } = useSignIn()
-  const categories = useFetch((signal) => getCategories(signal), 'categories')
   const [menuOpen, setMenuOpen] = useState(false)
   // Checkout keeps the shopper on the task: no search or category menu, just the way back to the cart.
   const checkout = useLocation().pathname === '/checkout'
@@ -79,7 +76,7 @@ export function Header() {
           <div className="container">
             <ul className="category-bar__list">
               <li><NavLink to="/shop" end className="category-bar__link">Shop all</NavLink></li>
-              {categories.data?.map((c) => (
+              {categories.map((c) => (
                 <li key={c.category_id}>
                   <NavLink to={`/category/${c.category_id}`} className="category-bar__link">
                     {titleCase(c.category_name)}
@@ -92,9 +89,9 @@ export function Header() {
                 </NavLink>
               </li>
               <li>
-                <Link to="/account" className="category-bar__link category-bar__link--quiet">
+                <NavLink to="/track-order" className="category-bar__link category-bar__link--quiet">
                   <TruckIcon size={16} /> Track order
-                </Link>
+                </NavLink>
               </li>
               <li><NavLink to="/blog" className="category-bar__link category-bar__link--quiet">Journal</NavLink></li>
               <li><a href="#contact" className="category-bar__link category-bar__link--quiet">Contact</a></li>
@@ -107,7 +104,7 @@ export function Header() {
         <CategoryMenu
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          categories={categories.data ?? []}
+          categories={categories}
           signedIn={Boolean(session)}
         />
       )}
@@ -200,9 +197,9 @@ function CategoryMenu({ open, onClose, categories, signedIn }: { open: boolean; 
               </NavLink>
             </li>
             <li className="menu-drawer__extra">
-              <Link to="/account" className="menu-drawer__link">
+              <NavLink to="/track-order" className="menu-drawer__link">
                 <span className="menu-drawer__label"><TruckIcon size={20} /> Track order</span>
-              </Link>
+              </NavLink>
             </li>
             <li className="menu-drawer__extra">
               <NavLink to="/blog" className="menu-drawer__link">

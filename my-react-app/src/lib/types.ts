@@ -249,14 +249,24 @@ export type OrderTracking = {
   etd: string | null
 }
 
-export type PaymentMethod = 'PREPAID' | 'COD'
+export type PaymentMethod = 'PREPAID' | 'COD' | 'PARTIAL_PREPAID'
+
+export type PartialPrepaidQuote = {
+  percent: number
+  amount_paise: number
+  balance_paise: number
+}
 
 export type OrderPayment = {
   method: PaymentMethod
   // COD: pending -> collected. Online: awaiting_payment -> paid (-> refund_pending -> refunded).
-  // Either can end as cancelled, or failed when an online payment never came.
-  status: 'pending' | 'collected' | 'awaiting_payment' | 'paid' | 'refund_pending' | 'refunded' | 'failed' | 'cancelled'
+  // Partial COD: awaiting_payment -> partially_paid after online payment -> collected on delivery.
+  status: 'pending' | 'collected' | 'awaiting_payment' | 'paid' | 'partially_paid' | 'refund_pending' | 'refunded' | 'failed' | 'cancelled'
   collected_at: string | null
+  amount_paise?: number
+  balance_paise?: number | null
+  partial_prepaid_percent?: number | null
+  online_collected_at?: string | null
   transaction_id?: string | null
   // The admin let this unpaid online order be paid in cash on delivery instead.
   cod_allowed?: boolean
@@ -265,8 +275,9 @@ export type OrderPayment = {
 // What GET /payments/methods says the store accepts.
 export type PaymentOptions = {
   methods: PaymentMethod[]
-  default: PaymentMethod
+  default: PaymentMethod | null
   razorpay_key: string | null
+  partial_prepaid_percent: number | null
   cod_fee: number | null
   max_cod_order_value: number | null
 }
@@ -337,6 +348,7 @@ export type CouponQuote = {
 export type ShippingQuote = {
   pincode: string
   shipping_fee: number
+  partial_prepaid_quote: PartialPrepaidQuote | null
   free_shipping: boolean
   free_shipping_reason: 'zone' | 'min_order' | null
   // The store's minimum order value for free delivery anywhere; null when it has none.

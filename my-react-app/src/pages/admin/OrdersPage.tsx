@@ -4,7 +4,7 @@ import { SearchIcon } from '../../components/Icons'
 import { StatusPill } from '../../components/StatusPill'
 import { ErrorState, Loading } from '../../components/ui'
 import { getAdminOrders, type AdminOrder } from '../../lib/adminApi'
-import { ORDER_STEPS, STATUS_LABELS, isPrepaid, money, orderDate, paymentStatusLabel } from '../../lib/format'
+import { ORDER_STEPS, STATUS_LABELS, isPrepaid, money, orderDate, partialPayment, paymentStatusLabel } from '../../lib/format'
 import type { OrderStatus } from '../../lib/types'
 import { downloadFile, fetchAllOrders, ordersCsv } from '../../lib/orderCsv'
 import { useFetch } from '../../lib/useFetch'
@@ -62,7 +62,7 @@ export function OrdersPage() {
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
 
-  // One box searches part of the order number, or the customer's name, email or mobile number.
+  // One box searches part of the order ID, or the customer's name, email or mobile number.
   const matching = {
     status,
     search: q || undefined,
@@ -177,7 +177,7 @@ export function OrdersPage() {
                     <td className="hide-sm">{o.items.reduce((n, i) => n + i.quantity, 0)}</td>
                     <td data-label="Placed">{orderDate(o.created_at)}</td>
                     <td className="cell-aside"><StatusPill status={o.status} /></td>
-                    <td data-label="Payment">{isPrepaid(o) ? 'Online' : 'COD'}<span className="table__sub">{paymentStatusLabel(o)}</span></td>
+                    <PaymentCell order={o} />
                     <td className="num" data-label="Total">{money(o.pricing.total)}{o.coupon && <span className="table__sub">{o.coupon.code}</span>}</td>
                   </tr>
                 ))}
@@ -223,6 +223,24 @@ type Results = { query: string; orders: AdminOrder[] }
  * The orders search with a type-ahead list, like the customers one: the arrow keys move through the
  * list, Enter opens the highlighted order or searches for the text, Escape closes the list.
  */
+function PaymentCell({ order }: { order: AdminOrder }) {
+  const split = partialPayment(order)
+  return (
+    <td data-label="Payment">
+      {split ? 'Partial COD' : isPrepaid(order) ? 'Online' : 'COD'}
+      <span className="table__sub">{paymentStatusLabel(order)}</span>
+      {split && (
+        <>
+          <span className="table__sub">Collected {money(split.collected)}</span>
+          <span className="table__sub">
+            Pending <span className={split.pending > 0 ? 'admin-payment-due' : undefined}>{money(split.pending)}</span>
+          </span>
+        </>
+      )}
+    </td>
+  )
+}
+
 function OrderSearch({ initial, onSearch }: { initial: string; onSearch: (term: string) => void }) {
   const navigate = useNavigate()
   const [text, setText] = useState(initial)
@@ -307,7 +325,7 @@ function OrderSearch({ initial, onSearch }: { initial: string; onSearch: (term: 
       <input
         ref={inputRef}
         id="order-search"
-        placeholder="Order number, customer name, email or mobile"
+        placeholder="Order ID, customer name, email or mobile"
         autoComplete="off"
         role="combobox"
         aria-autocomplete="list"

@@ -2902,6 +2902,16 @@ img.category-name__avatar,
 }
 
 /* ---------- Orders ---------- */
+.admin-payment-due {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .admin-items {
   display: grid;
   margin: 0;
@@ -2942,6 +2952,12 @@ img.category-name__avatar,
 .admin-items__name span {
   color: var(--ink-soft);
   font-size: 0.875rem;
+}
+
+.admin-items__customization {
+  color: #111;
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
 .admin-items .num {
@@ -3523,6 +3539,21 @@ img.category-name__avatar,
 .settings-option__text > span {
   color: var(--ink-soft);
   font-size: 0.875rem;
+}
+
+.settings-option__form {
+  margin-top: 8px;
+}
+
+.settings-option__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-option__form .admin-input {
+  width: 6rem;
 }
 
 .settings-pill {

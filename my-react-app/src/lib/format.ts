@@ -8,6 +8,8 @@ export function money(amount: number | null | undefined): string {
   return Number.isInteger(value) ? rupees.format(value).replace(/\.00$/, '') : rupees.format(value)
 }
 
+export const weightLabel = (grams: number) => grams < 1000 ? `${grams} g` : `${grams / 1000} kg`
+
 export function orderDate(iso: string): string {
   // The backend sends UTC without a timezone suffix; mark it as UTC before converting.
   const date = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`)
@@ -52,7 +54,19 @@ export const isPrepaid = (order: Order) => order.payment.method === 'PREPAID'
 export const awaitsPayment = (order: Order) => order.status === 'payment_pending'
 
 export function paymentMethodLabel(order: Order): string {
-  return isPrepaid(order) ? 'Paid online' : 'Cash on delivery'
+  if (order.payment.method === 'PARTIAL_PREPAID') return 'Partial COD'
+  return isPrepaid(order) ? 'Online payment' : 'Cash on delivery'
+}
+
+export function partialPayment(order: Order) {
+  const { method, status, amount_paise, balance_paise } = order.payment
+  if (method !== 'PARTIAL_PREPAID' || amount_paise == null || balance_paise == null) return null
+  const online = amount_paise / 100
+  const balance = balance_paise / 100
+  const onlineCollected = ['partially_paid', 'collected', 'refund_pending'].includes(status)
+  const collected = status === 'collected' ? order.pricing.total : onlineCollected ? online : 0
+  const pending = order.status === 'cancelled' || status === 'collected' ? 0 : onlineCollected ? balance : order.pricing.total
+  return { online, balance, collected, pending }
 }
 
 // One short phrase for where the money stands, shared by the customer and admin screens.
@@ -60,6 +74,7 @@ export function paymentStatusLabel(order: Order): string {
   switch (order.payment.status) {
     case 'collected': return 'Cash collected'
     case 'paid': return 'Paid'
+    case 'partially_paid': return 'Partially paid'
     case 'awaiting_payment': return 'Payment pending'
     case 'refund_pending': return 'Refund in progress'
     case 'refunded': return 'Refunded'

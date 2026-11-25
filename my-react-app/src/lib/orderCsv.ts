@@ -1,7 +1,7 @@
 // The admin's order sheet: every order matching the Orders page filters, one row per order,
 // as a CSV that Excel and Google Sheets open directly.
 import { getAdminOrders, type AdminOrder, type OrderFilters } from './adminApi'
-import { STATUS_LABELS, paymentStatusLabel } from './format'
+import { STATUS_LABELS, partialPayment, paymentStatusLabel } from './format'
 
 // Fetched a page at a time, the largest page the Orders page itself asks for.
 const BATCH = 50
@@ -35,7 +35,7 @@ function indiaTime(iso: string): string {
 }
 
 const COLUMNS: [string, (o: AdminOrder) => string | number | null | undefined][] = [
-  ['Order number', (o) => o.order_number],
+  ['Order ID', (o) => o.order_number],
   ['Placed on (IST)', (o) => indiaTime(o.created_at)],
   ['Status', (o) => STATUS_LABELS[o.status] ?? o.status],
   ['Customer name', (o) => o.customer.full_name],
@@ -53,8 +53,10 @@ const COLUMNS: [string, (o: AdminOrder) => string | number | null | undefined][]
   ['Shipping', (o) => o.pricing.shipping_fee],
   ['COD fee', (o) => o.pricing.cod_fee],
   ['Total', (o) => o.pricing.total],
-  ['Payment method', (o) => (o.payment.method === 'PREPAID' ? 'Online' : 'COD')],
+  ['Payment method', (o) => o.payment.method === 'PARTIAL_PREPAID' ? 'Partial COD' : o.payment.method === 'PREPAID' ? 'Online' : 'COD'],
   ['Payment status', (o) => paymentStatusLabel(o)],
+  ['Partial COD collected amount', (o) => partialPayment(o)?.collected],
+  ['Partial COD pending amount', (o) => partialPayment(o)?.pending],
   ['Transaction ID', (o) => o.payment.transaction_id],
   ['Courier', (o) => o.tracking?.courier_name ?? o.shipment?.courier_name],
   ['AWB', (o) => o.tracking?.awb ?? o.shipment?.awb],

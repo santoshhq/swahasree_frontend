@@ -13,31 +13,33 @@ const INTERVAL_MS = 5000
 
 const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
-export function HeroBanner() {
+export function HeroBanner({ fallback }: { fallback?: HeroSlide }) {
   const banners = useFetch((signal) => getBanners(signal), 'hero-banners')
   const uploaded = banners.data?.banners ?? []
-  if (!uploaded.length) return null
+  if (!uploaded.length && banners.loading) return <div className="hero__frame" aria-hidden />
   const slides = uploaded.slice(0, MAX_SLIDES).map((banner) => ({
     key: banner.banner_id,
     src: banner.image_url,
     link: banner.link,
     label: banner.alt_text ?? 'Shop the featured collection',
   }))
-  return <HeroCarousel slides={slides} animation={banners.data?.animation ?? DEFAULT_ANIMATION} />
+  return <HeroCarousel slides={slides} animation={banners.data?.animation ?? DEFAULT_ANIMATION} fallback={fallback} />
 }
 
 /**
  * The slideshow itself, also used for the live preview in the admin's animation picker.
  * preview: no links, no pause on hover, and a shorter wait, so the animation shows straight away.
  */
-export function HeroCarousel({ slides: requested, animation, preview = false }: {
+export function HeroCarousel({ slides: requested, animation, preview = false, fallback }: {
   slides: HeroSlide[]
   animation: HeroAnimation
   preview?: boolean
+  fallback?: HeroSlide
 }) {
   // Remove broken uploads from the rotation.
   const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set())
-  const slides = requested.filter((slide) => !failed.has(slide.src))
+  const uploaded = requested.filter((slide) => !failed.has(slide.src))
+  const slides = !uploaded.length && fallback && !failed.has(fallback.src) ? [fallback] : uploaded
   const n = slides.length
   const animationMode = n > 1 ? animation : 'static'
   // prev: the banner on its way out, which some animations (slide, wipe) move as well.

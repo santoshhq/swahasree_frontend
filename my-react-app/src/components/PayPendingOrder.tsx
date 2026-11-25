@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { payMyOrder, payMyOrderOnDelivery, verifyPayment } from '../lib/api'
-import { money } from '../lib/format'
+import { money, partialPayment } from '../lib/format'
 import { payWithRazorpay } from '../lib/razorpay'
 import type { Order } from '../lib/types'
 import { ArrowIcon } from './Icons'
@@ -13,6 +13,7 @@ import { ArrowIcon } from './Icons'
 export function PayPendingOrder({ order, token, onPlaced }: { order: Order; token: string; onPlaced: (order: Order) => void }) {
   const [busy, setBusy] = useState<'online' | 'cod' | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const split = partialPayment(order)
 
   const payOnline = async () => {
     setBusy('online')
@@ -49,7 +50,7 @@ export function PayPendingOrder({ order, token, onPlaced }: { order: Order; toke
     <div className="pay-pending">
       <div className="pay-pending__actions">
         <button type="button" className="account-button order-due__button" onClick={payOnline} disabled={busy !== null}>
-          {busy === 'online' ? 'Waiting for payment…' : <>Pay {money(order.pricing.total)} now <ArrowIcon size={16} /></>}
+          {busy === 'online' ? 'Waiting for payment…' : <>Pay {money(split?.online ?? order.pricing.total)} now <ArrowIcon size={16} /></>}
         </button>
         {order.cod_available && (
           <button type="button" className="text-button" onClick={payOnDelivery} disabled={busy !== null}>
@@ -57,6 +58,7 @@ export function PayPendingOrder({ order, token, onPlaced }: { order: Order; toke
           </button>
         )}
       </div>
+      {split && <p>{money(split.balance)} due on delivery after the online payment.</p>}
       {error && <p className="field__error" role="alert">{error}</p>}
     </div>
   )

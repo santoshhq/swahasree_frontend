@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { BRAND_LOGO as logo } from '../../lib/brand'
+import { BRAND_LOGO as logo, BRAND_LOGO_SIZE } from '../../lib/brand'
 import { ErrorState, Loading } from '../../components/ui'
 import { getAdminOrder } from '../../lib/adminApi'
 import {
   awaitsPayment,
   isPrepaid,
+  partialPayment,
   paymentStatusLabel,
   SUPPORT_EMAIL,
   SUPPORT_PHONE_DISPLAY,
@@ -131,11 +132,12 @@ export function InvoicePage() {
   const customer = o.customer
   const billing = o.billing_address ?? o.shipping_address
   const shipping = o.shipping_address
-  const due = amountDue(o)
+  const split = partialPayment(o)
+  const due = split?.pending ?? amountDue(o)
   const cancelled = o.status === 'cancelled'
   const invoiceNumber = o.invoice_number || invoiceCode(o.order_id)
   const issueDate = invoiceDate(o.invoice_date || printedOn)
-  const paymentMode = isPrepaid(o) ? 'Prepaid (Online)' : 'Cash on Delivery'
+  const paymentMode = split ? 'Partial COD' : isPrepaid(o) ? 'Prepaid (Online)' : 'Cash on Delivery'
   const paidOn = o.payment.collected_at ? invoiceDate(o.payment.collected_at) : null
   const discount = o.pricing.discount || o.coupon?.discount_amount || 0
 
@@ -156,7 +158,7 @@ export function InvoicePage() {
 
         <header className="invoice__head">
           <div className="invoice__seller">
-            <img src={logo} alt={SELLER.brand} className="invoice__logo" />
+            <img src={logo} alt={SELLER.brand} {...BRAND_LOGO_SIZE} className="invoice__logo" />
             <p className="invoice__legal-name">{SELLER.legalName}</p>
             {SELLER.addressLines.length > 0 && (
               <address className="invoice__seller-address">
@@ -171,7 +173,7 @@ export function InvoicePage() {
             <dl className="invoice__meta">
               <div><dt>Invoice No.</dt><dd>{invoiceNumber}</dd></div>
               <div><dt>Invoice Date</dt><dd>{issueDate}</dd></div>
-              <div><dt>Order No.</dt><dd>{o.order_number}</dd></div>
+              <div><dt>Order ID</dt><dd>{o.order_number}</dd></div>
               <div><dt>Order Date</dt><dd>{invoiceDate(o.created_at)}</dd></div>
             </dl>
           </div>
@@ -234,6 +236,7 @@ export function InvoicePage() {
           <dl className="invoice__payment">
             <div><dt>Payment Mode</dt><dd>{paymentMode}</dd></div>
             <div><dt>Payment Status</dt><dd>{paymentStatusLabel(o)}</dd></div>
+            {split && <div><dt>Amount Collected</dt><dd>{rupees(split.collected)}</dd></div>}
             {paidOn && <div><dt>{isPrepaid(o) ? 'Paid On' : 'Collected On'}</dt><dd>{paidOn}</dd></div>}
             {o.payment.transaction_id && (
               <div><dt>Transaction ID</dt><dd className="invoice__mono">{o.payment.transaction_id}</dd></div>

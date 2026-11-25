@@ -3,11 +3,15 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router'
 import './App.css'
 import './styles/storefront.css'
 import './styles/pantry.css'
+import './styles/home.css'
 import { AnnouncementBar } from './components/AnnouncementBar'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { Loading } from './components/ui'
 import { WhatsAppButton } from './components/WhatsAppButton'
+import { HomeFooter } from './components/home/HomeFooter'
+import { getCategories } from './lib/api'
+import { useFetch } from './lib/useFetch'
 import { CategoryPage } from './pages/CategoryPage'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -21,6 +25,7 @@ const BulkOrdersPage = lazy(() => import('./pages/BulkOrdersPage').then((module)
 const CartPage = lazy(() => import('./pages/CartPage').then((module) => ({ default: module.CartPage })))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })))
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage').then((module) => ({ default: module.TrackOrderPage })))
 const OrderDetailPage = lazy(() => import('./pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })))
 const OrderPlacedPage = lazy(() => import('./pages/OrderPlacedPage').then((module) => ({ default: module.OrderPlacedPage })))
 const PolicyPage = lazy(() => import('./pages/PolicyPage').then((module) => ({ default: module.PolicyPage })))
@@ -54,6 +59,8 @@ const SettingsPage = lazy(() => import('./pages/admin/SettingsPage').then((modul
 
 function Layout() {
   const { pathname } = useLocation()
+  const { data: categories } = useFetch(getCategories, 'categories')
+  const menuCategories = categories ?? []
   // A new page starts at the top (filters and paging on the same page keep the scroll position).
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -64,11 +71,11 @@ function Layout() {
       <a href="#main" className="skip-link">Skip to content</a>
       {/* The store's switched-on announcement, above the header; nothing when none is on. */}
       <AnnouncementBar />
-      <Header />
+      <Header categories={menuCategories} />
       <main id="main">
-        <Outlet />
+        <Outlet context={menuCategories} />
       </main>
-      <Footer />
+      {pathname === '/' ? <HomeFooter categories={menuCategories} /> : <Footer />}
       {/* The WhatsApp chat button, on every page of the shop. */}
       <WhatsAppButton />
     </>
@@ -89,6 +96,7 @@ export default function App() {
         <Route path="cart" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="order-placed" element={<OrderPlacedPage />} />
+        <Route path="track-order" element={<TrackOrderPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="privacy-policy" element={<PolicyPage key="privacy" id="privacy" />} />
         <Route path="terms" element={<PolicyPage key="terms" id="terms" />} />

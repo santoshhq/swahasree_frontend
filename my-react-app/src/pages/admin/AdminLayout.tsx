@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
-import { BRAND_LOGO as logo } from '../../lib/brand'
+import { BRAND_LOGO as logo, BRAND_LOGO_SIZE, BRAND_MARK } from '../../lib/brand'
 import { AdminAccessContext, allowed, type AdminAccess } from '../../lib/adminAccess'
 import { ENQUIRIES_CHANGED_EVENT, getManagerMe, getNewReviewCount, getUnreadEnquiryCount, REVIEWS_SEEN_EVENT } from '../../lib/adminApi'
 import {
@@ -200,9 +200,9 @@ export function AdminLayout() {
         <aside className="admin-sidebar" aria-label="Admin menu">
           <div className="admin-sidebar__brand">
             <Link to={firstPage ?? base} className="admin-sidebar__logo" aria-label="Home of the admin panel">
-              <img src={logo} alt="Swahasree" width={150} height={73} className="admin-sidebar__logo-full" />
+              <img src={logo} alt="Swahasree" {...BRAND_LOGO_SIZE} className="admin-sidebar__logo-full" />
               {/* The Swahasree brand mark stands in when the menu is collapsed to icons. */}
-              <img src="/favicon-96x96.png" alt="" width={36} height={36} className="admin-sidebar__logo-mark" />
+              <img src={BRAND_MARK} alt="" width={36} height={36} className="admin-sidebar__logo-mark" />
             </Link>
             <button className="admin-sidebar__close" onClick={() => setDrawerOpen(false)} aria-label="Close menu">
               <CloseIcon />

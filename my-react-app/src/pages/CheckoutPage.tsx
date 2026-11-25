@@ -9,6 +9,7 @@ import { CartIcon, CardIcon, CashIcon, EditIcon, GiftIcon, LockIcon, PinIcon, Pl
 import { BrandButton, ProductImage } from '../components/ui'
 import { ApiError, getMyAddresses, getPaymentOptions, getShippingQuote, placeOrder, validateCoupon, verifyPayment } from '../lib/api'
 import { ADDRESS_TYPES } from '../lib/addresses'
+import { flavorSummary } from '../lib/flavor'
 import { useOfferPreview } from '../lib/offers'
 import { money, plural, taxIncluded } from '../lib/format'
 import { payWithRazorpay } from '../lib/razorpay'
@@ -77,6 +78,7 @@ function SummaryItems({ items, freeItems }: { items: CartItem[]; freeItems: Orde
           <span className="summary__item-name">
             {i.product_name}
             <small>{i.variant_name} · Qty {i.quantity}{i.quantity > 1 && <> × {money(i.price)}</>}</small>
+            {i.customization && <small>{flavorSummary(i.customization)}</small>}
           </span>
           <span className="summary__item-price">{money(i.price * i.quantity)}</span>
         </li>
@@ -216,20 +218,23 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
   const cartKey = lines.map((l) => `${l.product_id}:${l.variant_name}:${l.quantity}`).join(',')
   const couponCode = coupon?.code ?? null
   const shippingKey = pinReady && method ? `${pincode}|${method}|${couponCode ?? ''}|${cartKey}` : ''
-  const shipping = useFetch(
-    (signal) => (shippingKey && method ? getShippingQuote(pincode, lines, method, couponCode, signal, token) : Promise.resolve(null)),
-    `shipping|${shippingKey}`,
-  )
-  // While a new quote loads, the old one (another PIN code or method) must not be used.
-  const shippingQuote = !shipping.loading && shipping.data?.pincode === pincode ? shipping.data : null
+  const shipping = useFetch(async (signal) => {
+    if (!shippingKey || !method) return null
+    return { key: shippingKey, quote: await getShippingQuote(pincode, lines, method, couponCode, signal, token) }
+  }, `shipping|${shippingKey}`)
+  const shippingQuote = !shipping.loading && shipping.data?.key === shippingKey ? shipping.data.quote : null
   const shippingFee = shippingQuote?.shipping_fee ?? null
-  // No address chosen yet, or a PIN code without a charge yet (loading, or no courier delivers there): can't pay yet.
-  const waitingForDelivery = !pinReady || shippingFee === null
-
+  const split = shippingQuote?.partial_prepaid_quote
   const prepaid = method === 'PREPAID'
+  const partial = method === 'PARTIAL_PREPAID'
+  const online = prepaid || partial
+  const waitingForDelivery = shippingFee === null || (partial && !split)
+
   const discount = coupon?.pricing.discount ?? 0
-  const codFee = method === 'COD' ? paymentOptions.data?.cod_fee ?? 0 : 0
-  const total = Math.max(0, subtotal - discount) + codFee + (shippingFee ?? 0)
+  const codFee = method && !prepaid ? paymentOptions.data?.cod_fee ?? 0 : 0
+  const total = split ? (split.amount_paise + split.balance_paise) / 100 : Math.max(0, subtotal - discount) + codFee + (shippingFee ?? 0)
+  const payNow = partial ? split && split.amount_paise / 100 : total
+  const payOnDelivery = split && split.balance_paise / 100
   const maxCod = paymentOptions.data?.max_cod_order_value ?? null
   const codTooLarge = method === 'COD' && maxCod !== null && total > maxCod
 
@@ -307,12 +312,17 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
           items: available.map(orderLine),
           coupon_code: coupon?.code,
           payment_method: method,
+          partial_prepaid_quote: split ?? undefined,
           notes: notes.trim() || undefined,
         },
         idempotencyKey.current,
       )
 
       let placed = order
+      if (payment && split && (payment.amount !== split.amount_paise || order.payment.balance_paise !== split.balance_paise)) {
+        navigate(`/account/orders/${order.order_id}`, { replace: true })
+        return
+      }
       if (payment) {
         setStage('paying')
         const result = await payWithRazorpay(payment, 'Swahasree')
@@ -336,13 +346,17 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
         setCoupon(null)
         startNewOrder()
       }
+      if (partial && err instanceof ApiError && /Partial COD (amounts changed|is not available)/i.test(err.message)) {
+        paymentOptions.reload()
+        shipping.reload()
+      }
       setOrderError((err as Error).message)
       setPlacing(false)
     }
   }
 
   const busyLabel = stage === 'paying' ? 'Waiting for payment…' : stage === 'confirming' ? 'Confirming payment…' : 'Placing order…'
-  const buttonLabel = placing ? busyLabel : prepaid ? `Pay ${money(total)}` : 'Place order'
+  const buttonLabel = placing ? busyLabel : online ? (payNow == null ? 'Pay now' : `Pay ${money(payNow)}`) : 'Place order'
   const itemCount = lines.reduce((n, l) => n + l.quantity, 0)
   const cannotPay = placing || !method || codTooLarge || waitingForDelivery || showingForm
   const firstName = customer.name?.split(' ')[0]
@@ -455,6 +469,8 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
               </div>
             ) : !paymentOptions.data ? (
               <p className="form-section__hint">Loading payment options…</p>
+            ) : methods.length === 0 ? (
+              <p className="field__error" role="alert">No payment methods are available right now.</p>
             ) : (
               <div className="payment-options" role="radiogroup" aria-label="Payment method">
                 {methods.includes('PREPAID') && (
@@ -474,6 +490,16 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
                     <div>
                       <strong>Cash on delivery</strong>
                       <p>Pay in cash when your order arrives.</p>
+                    </div>
+                  </label>
+                )}
+                {methods.includes('PARTIAL_PREPAID') && (
+                  <label className={`payment-option${partial ? ' is-on' : ''}`}>
+                    <input type="radio" name="payment" checked={partial} onChange={() => chooseMethod('PARTIAL_PREPAID')} />
+                    <CardIcon />
+                    <div>
+                      <strong>Partial COD</strong>
+                      <p>Pay {split?.percent ?? paymentOptions.data.partial_prepaid_percent}% online and the balance on delivery.</p>
                     </div>
                   </label>
                 )}
@@ -501,7 +527,7 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
                   <strong>{coupon.code} applied!</strong>
                   <span>{discount > 0 ? <>You save <b>{money(discount)}</b> on this order</> : coupon.description ?? 'Coupon added to your order'}</span>
                 </span>
-                <button type="button" className="text-button" onClick={() => { setCoupon(null); setCouponInput('') }}>Remove</button>
+                <button type="button" className="text-button" onClick={() => { setCoupon(null); setCouponInput(''); startNewOrder() }}>Remove</button>
               </div>
             ) : (
               <div className="coupon__form">
@@ -535,9 +561,15 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
             </div>
             {codFee > 0 && <div><dt>Cash on delivery fee</dt><dd>{money(codFee)}</dd></div>}
             <div className="summary__total">
-              <dt>{prepaid ? 'To pay now' : 'To pay on delivery'}{shippingFee === null && <small> plus delivery</small>}</dt>
+              <dt>{partial ? 'Order total' : prepaid ? 'To pay now' : 'To pay on delivery'}{shippingFee === null && <small> plus delivery</small>}</dt>
               <dd>{money(total)}</dd>
             </div>
+            {split && (
+              <>
+                <div><dt>To pay now ({split.percent}%)</dt><dd><strong>{money(payNow)}</strong></dd></div>
+                <div><dt>Due on delivery</dt><dd>{money(payOnDelivery)}</dd></div>
+              </>
+            )}
           </dl>
           <p className="summary__tax">Including {money(taxIncluded(Math.max(0, subtotal - discount)))} in taxes</p>
           {!!shippingQuote?.amount_left_for_free_shipping && (
@@ -552,21 +584,23 @@ function CheckoutForm({ token, customer }: { token: string; customer: Customer }
             {buttonLabel}
           </BrandButton>
           <p className="summary__note">
-            {prepaid
-              ? <>You'll pay {money(total)} in Razorpay's secure window. Your order is confirmed once the payment goes through. </>
-              : <>By placing the order you agree to pay {money(total)} in cash on delivery. </>}
+            {partial
+              ? split && <>Pay {money(payNow)} through Razorpay now and {money(payOnDelivery)} in cash on delivery. </>
+              : prepaid
+                ? <>You'll pay {money(total)} in Razorpay's secure window. Your order is confirmed once the payment goes through. </>
+                : <>By placing the order you agree to pay {money(total)} in cash on delivery. </>}
             <Link to="/cart">Edit cart</Link>
           </p>
-          {prepaid && <p className="checkout__secure"><LockIcon size={14} /> Payments are processed securely by Razorpay</p>}
+          {online && <p className="checkout__secure"><LockIcon size={14} /> Payments are processed securely by Razorpay</p>}
         </aside>
 
         <ActionBar target={payButton} paused={typing}>
           <div className="action-bar__total">
-            <span>{prepaid ? 'To pay now' : 'To pay on delivery'} · {shippingFee === null ? 'plus delivery' : plural(itemCount, 'item')}</span>
-            <strong className="price">{money(total)}</strong>
+            <span>{online ? 'To pay now' : 'To pay on delivery'} · {shippingFee === null ? 'plus delivery' : plural(itemCount, 'item')}</span>
+            <strong className="price">{payNow == null ? '—' : money(payNow)}</strong>
           </div>
           <BrandButton type="submit" aria-busy={placing || undefined} disabled={cannotPay}>
-            {placing ? busyLabel : prepaid ? 'Pay now' : 'Place order'}
+            {placing ? busyLabel : online ? 'Pay now' : 'Place order'}
           </BrandButton>
         </ActionBar>
       </form>

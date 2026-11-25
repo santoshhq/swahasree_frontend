@@ -14,8 +14,8 @@ export function titleCase(name: string): string {
 }
 
 /**
- * The name a card shows: the part before the first "|" (catalogue names carry a search-friendly
- * tail, such as "Avakaya | Andhra mango pickle". The full name stays in titles.
+ * The compact name used in review links: the part before the first "|" in catalogue names
+ * such as "Avakaya | Andhra mango pickle".
  */
 export function shortName(name: string): string {
   const head = name.split('|')[0].trim()

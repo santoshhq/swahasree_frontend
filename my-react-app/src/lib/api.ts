@@ -87,7 +87,10 @@ export async function request<T>(path: string, { method = 'GET', body, token, he
     throw new ApiError(0, "Can't reach the store. Check your internet connection and try again.")
   }
   const data = await response.json().catch(() => null)
-  if (!response.ok) throw new ApiError(response.status, readableError(data?.detail, response.status))
+  if (!response.ok) {
+    const message = readableError(data?.detail, response.status).replaceAll('Partial Prepaid', 'Partial COD')
+    throw new ApiError(response.status, message)
+  }
   return data as T
 }
 
@@ -192,6 +195,7 @@ export type PlaceOrderInput = {
   items: CartLine[]
   coupon_code?: string
   payment_method: PaymentMethod
+  partial_prepaid_quote?: ShippingQuote['partial_prepaid_quote']
   notes?: string
 }
 

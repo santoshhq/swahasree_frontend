@@ -124,7 +124,12 @@ export type ReviewApproval = 'Pending' | 'Approved' | 'Reject'
 
 export type AdminReview = Review & { product_name: string | null; email_id: string; is_new: boolean; admin_approvel: ReviewApproval }
 
-export type PaymentSettings = { prepaid: boolean; cod: boolean }
+export type PaymentSettings = {
+  prepaid: boolean
+  cod: boolean
+  partial_prepaid: boolean
+  partial_prepaid_percent: number | null
+}
 
 export type AdminProfile = {
   admin_id: string
@@ -456,7 +461,7 @@ export type OrderFilters = {
   status?: OrderStatus
   email_id?: string
   order_number?: string
-  // Part of the order number, or the customer's name, email or mobile number.
+  // Part of the order ID, or the customer's name, email or mobile number.
   search?: string
   // YYYY-MM-DD, both days included; the backend reads them as India time.
   start_date?: string

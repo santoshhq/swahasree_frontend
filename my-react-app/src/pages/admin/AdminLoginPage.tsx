@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { BRAND_LOGO as logo } from '../../lib/brand'
+import { BRAND_LOGO as logo, BRAND_LOGO_SIZE } from '../../lib/brand'
 import { BrandButton } from '../../components/ui'
 import { ApiError, adminLogin } from '../../lib/api'
 import { getAdminSession, saveAdminSession } from '../../lib/adminSession'
@@ -40,7 +40,7 @@ export function AdminLoginPage() {
     <div className="admin-auth">
       <section className="admin-auth__card" aria-labelledby="admin-login-title">
         <Link to="/" className="admin-auth__logo" aria-label="Back to the store">
-          <img src={logo} alt="Swahasree" width={190} height={92} />
+          <img src={logo} alt="Swahasree" {...BRAND_LOGO_SIZE} />
         </Link>
         <h1 id="admin-login-title">Store admin</h1>
         <p className="admin-auth__lead">Sign in to manage products, orders and coupons.</p>

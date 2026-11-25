@@ -10,7 +10,7 @@
   padding: 28px 24px 48px;
   color: var(--invoice-ink);
   background: #f2f2f2;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font);
   font-size: 11px;
   line-height: 1.5;
 }

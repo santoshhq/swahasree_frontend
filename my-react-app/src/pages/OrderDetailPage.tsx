@@ -7,7 +7,8 @@ import { SignInPrompt } from '../components/SignInPrompt'
 import { StatusPill } from '../components/StatusPill'
 import { ErrorState, Loading, ProductImage } from '../components/ui'
 import { ApiError, cancelMyOrder, getMyOrder } from '../lib/api'
-import { awaitsPayment, CUSTOMER_CANCELLABLE, isPrepaid, money, ORDER_STEPS, orderDate, paymentStatusLabel, STATUS_LABELS, SUPPORT_EMAIL, trackingUrl } from '../lib/format'
+import { flavorSummary } from '../lib/flavor'
+import { awaitsPayment, CUSTOMER_CANCELLABLE, money, ORDER_STEPS, orderDate, partialPayment, paymentMethodLabel, paymentStatusLabel, STATUS_LABELS, SUPPORT_EMAIL, trackingUrl } from '../lib/format'
 import type { Order, OrderStatus } from '../lib/types'
 import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../state/auth'
@@ -32,6 +33,7 @@ export function OrderDetailPage() {
   if (result.error) return <div className="container page"><ErrorState message={result.error.message} onRetry={result.reload} /></div>
   const order = updated ?? result.data
   if (!order) return <div className="container page"><Loading /></div>
+  const split = partialPayment(order)
 
   return (
     <div className="container page">
@@ -72,6 +74,7 @@ export function OrderDetailPage() {
                 <div className="cart-line__info">
                   <span className="cart-line__name">{item.product_name}</span>
                   <span className="cart-line__variant">{item.variant_name} × {item.quantity}</span>
+                  {item.customization && <span className="cart-line__variant">{flavorSummary(item.customization)}</span>}
                   <span className="cart-line__unit">{money(item.unit_price)} each</span>
                 </div>
                 <p className="cart-line__total price">{money(item.line_total)}</p>
@@ -107,7 +110,7 @@ export function OrderDetailPage() {
             <div>
               <h2>Payment</h2>
               <p>
-                {isPrepaid(order) ? 'Online payment' : 'Cash on delivery'}<br />
+                {paymentMethodLabel(order)}<br />
                 {paymentStatusLabel(order)}
               </p>
             </div>
@@ -123,7 +126,13 @@ export function OrderDetailPage() {
             )}
             <div><dt>Delivery</dt><dd>{order.pricing.shipping_fee ? money(order.pricing.shipping_fee) : 'Free'}</dd></div>
             {order.pricing.cod_fee > 0 && <div><dt>Cash on delivery fee</dt><dd>{money(order.pricing.cod_fee)}</dd></div>}
-            <div className="summary__total"><dt>{['collected', 'paid'].includes(order.payment.status) ? 'Paid' : order.payment.status === 'refunded' ? 'Refunded' : 'To pay'}</dt><dd>{money(order.pricing.total)}</dd></div>
+            {split && order.status !== 'cancelled' && (
+              <>
+                <div><dt>Paid</dt><dd>{money(split.collected)}</dd></div>
+                {split.pending > 0 && <div><dt>{awaitsPayment(order) ? 'Due online now' : 'Due on delivery'}</dt><dd>{money(awaitsPayment(order) ? split.online : split.pending)}</dd></div>}
+              </>
+            )}
+            <div className="summary__total"><dt>{split ? 'Order total' : ['collected', 'paid'].includes(order.payment.status) ? 'Paid' : order.payment.status === 'refunded' ? 'Refunded' : 'To pay'}</dt><dd>{money(order.pricing.total)}</dd></div>
           </dl>
           {CUSTOMER_CANCELLABLE.includes(order.status) && (
             <CancelOrder order={order} token={token} onCancelled={setUpdated} />
@@ -192,7 +201,7 @@ function CancelOrder({ order, token, onCancelled }: { order: Order; token: strin
 
   return (
     <div className="cancel-box">
-      <p><strong>Cancel order {order.order_number}?</strong> {order.payment.status === 'paid' ? `Your payment of ${money(order.pricing.total)} will be refunded to the same account in 5–7 working days.` : "You won't be charged anything."}</p>
+      <p><strong>Cancel order {order.order_number}?</strong> {order.payment.status === 'paid' || order.payment.status === 'partially_paid' ? `Your payment of ${money(partialPayment(order)?.online ?? order.pricing.total)} will be refunded to the same account in 5–7 working days.` : "You won't be charged anything."}</p>
       <label htmlFor="cancel-reason">Reason (optional)</label>
       <textarea id="cancel-reason" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
       {error && <p className="field__error" role="alert">{error}</p>}

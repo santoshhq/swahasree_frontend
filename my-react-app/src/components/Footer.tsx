@@ -21,7 +21,8 @@ export function Footer() {
         </nav>
         <nav aria-label="Customer care">
           <h2>Customer care</h2>
-          <Link to="/account">My orders and tracking</Link>
+          <Link to="/account">My orders</Link>
+          <Link to="/track-order">Track order</Link>
           <a href={`mailto:${SUPPORT_EMAIL}`}><MailIcon size={16} /> {SUPPORT_EMAIL}</a>
           {SUPPORT_PHONE && <a href={`tel:${SUPPORT_PHONE}`}><PhoneIcon size={16} /> {SUPPORT_PHONE_DISPLAY}</a>}
         </nav>

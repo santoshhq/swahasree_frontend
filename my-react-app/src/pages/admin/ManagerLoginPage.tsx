@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { BRAND_LOGO as logo } from '../../lib/brand'
+import { BRAND_LOGO as logo, BRAND_LOGO_SIZE } from '../../lib/brand'
 import { BackIcon, EyeIcon, EyeOffIcon } from '../../components/Icons'
 import { BrandButton } from '../../components/ui'
 import { ApiError, managerLogin } from '../../lib/api'
@@ -75,7 +75,7 @@ export function ManagerLoginPage() {
       <section className="admin-auth__card manager-auth" aria-labelledby="manager-login-title">
         <header className="manager-auth__head">
           <Link to="/" className="admin-auth__logo" aria-label="Back to the store">
-            <img src={logo} alt="Swahasree" width={190} height={92} />
+            <img src={logo} alt="Swahasree" {...BRAND_LOGO_SIZE} />
           </Link>
           <p className="manager-auth__eyebrow">Staff access</p>
           <h1 id="manager-login-title">Store Manager Login</h1>

@@ -10,6 +10,8 @@ Put the backend's public Google OAuth client ID in `VITE_GOOGLE_CLIENT_ID` in `.
 
 The support email defaults to `info@swahasree.com`. Optional storefront settings are `VITE_SUPPORT_EMAIL`, `VITE_SUPPORT_PHONE`, `VITE_WHATSAPP_NUMBER` and `VITE_SITE_URL`. Set `VITE_SELLER_LEGAL_NAME`, `VITE_SELLER_ADDRESS` (separate lines with `|`) and `VITE_SELLER_GSTIN` for printed invoices.
 
+For the homepage footer, set `VITE_SUPPORT_ADDRESS` and `VITE_FSSAI_LICENSE_NUMBER` to the store’s public details. To display payment method badges, set `VITE_RAZORPAY_METHODS` to the confirmed methods from `upi,cards,netbanking,wallets`.
+
 Run `npm run build` for a production build. Set `SITEMAP_API` to the chosen backend URL if the sitemap should include the current catalog and blog.
 
 ## Demo catalog

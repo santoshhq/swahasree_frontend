@@ -84,9 +84,9 @@ export function ProductImage({ src, alt, className = '', eager = false }: { src?
 }
 
 // Placeholder cards while a product row loads, shaped like the real ones so nothing jumps.
-export function ProductGridSkeleton({ count = 4 }: { count?: number }) {
+export function ProductGridSkeleton({ count = 4, rail = false }: { count?: number; rail?: boolean }) {
   return (
-    <div className="product-grid product-grid--row" role="status" aria-label="Loading products">
+    <div className={rail ? 'product-rail__track product-rail__track--loading' : 'product-grid product-grid--row'} role="status" aria-label="Loading products">
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="product-card product-card--skeleton" aria-hidden>
           <span className="skeleton skeleton--media" />

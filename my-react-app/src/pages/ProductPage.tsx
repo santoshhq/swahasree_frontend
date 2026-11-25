@@ -11,7 +11,7 @@ import { QuantityStepper } from '../components/QuantityStepper'
 import { RatingBadge } from '../components/Stars'
 import { BrandButton, ErrorState, Loading, ProductImage } from '../components/ui'
 import { ApiError, getCategoryProducts, getPaymentOptions, getProduct, isShownInStore } from '../lib/api'
-import { money } from '../lib/format'
+import { money, weightLabel } from '../lib/format'
 import { flavorMinimumGrams } from '../lib/flavor'
 import { offersFor, useActiveOffers } from '../lib/offers'
 import { productJsonLd, snippet, usePageMeta } from '../lib/seo'
@@ -50,6 +50,7 @@ function ProductDetail({ product }: { product: Product }) {
   const [draftFlavors, setDraftFlavors] = useState<FlavorSelection>({})
   const offers = offersFor(product, useActiveOffers())
   const variant = product.variants.find((v) => v.variant_name === variantName)
+  const netGrams = variant?.net_weight_grams ?? 0
   const pack = variant?.in_stock ? {
     product_id: product.product_id, variant_name: variant.variant_name, product_name: product.product_name,
     price: variant.price, image: images[0] ?? null, unavailable: false,
@@ -93,7 +94,7 @@ function ProductDetail({ product }: { product: Product }) {
   }
 
   return (
-    <div className="container page">
+    <div className="container page product-page">
       <nav className="breadcrumbs" aria-label="Breadcrumb">
         <Link to="/">Home</Link>
         <span aria-hidden>/</span>
@@ -108,7 +109,7 @@ function ProductDetail({ product }: { product: Product }) {
 
       <div className="product-detail">
         <div className="gallery">
-          <ProductImage src={images[imageIndex]} alt={product.product_name} className={`gallery__main${product.in_stock ? '' : ' is-out'}`} />
+          <ProductImage src={images[imageIndex]} alt={product.product_name} eager className={`gallery__main${product.in_stock ? '' : ' is-out'}`} />
           {images.length > 1 && (
             <div className="gallery__thumbs" role="group" aria-label="Product photos">
               {images.map((src, i) => (
@@ -122,18 +123,20 @@ function ProductDetail({ product }: { product: Product }) {
 
         <div className="product-info">
           <Link to={`/category/${product.category_id}`} className="product-info__category">{product.sub_category || product.category_name}</Link>
-          <h1>{product.product_name}</h1>
+          <h1 className="product-info__title">{product.product_name}</h1>
           <a href="#reviews" className="product-info__rating">
             {rating.count > 0
-              ? <><RatingBadge average={rating.average} count={rating.count} size={18} /><span className="visually-hidden"> reviews</span></>
+              ? <><RatingBadge average={rating.average} count={rating.count} size={14} /><span className="visually-hidden"> reviews</span></>
               : 'No reviews yet · Write the first'}
           </a>
           <div className="product-info__price-block">
             <p className="product-info__price price">{money(variant?.price ?? product.min_price)}</p>
             {/* Item prices include GST (lib/format.ts); checkout shows the tax part. */}
-            <p className="product-info__price-note">{variant ? `${variant.variant_name} · ` : ''}Inclusive of all taxes</p>
+            <p className="product-info__price-note">
+              {variant && <span>{netGrams > 0 ? `Net quantity: ${weightLabel(netGrams)}` : variant.variant_name}</span>}
+              <span>Inclusive of all taxes</span>
+            </p>
           </div>
-          <OfferBox offers={offers} />
 
           <fieldset className="sizes">
             <legend>Pack size</legend>
@@ -168,7 +171,16 @@ function ProductDetail({ product }: { product: Product }) {
               <NotifyButton productId={product.product_id} productName={product.product_name} variant="page" />
             </div>
           )}
+          {payment.data && <PaymentNote methods={payment.data.methods} />}
           {added && <p className="added-note" role="status"><Link to="/cart">View your cart</Link> or keep shopping.</p>}
+
+          {product.description && (
+            <section className="product-info__description" aria-labelledby="about-title">
+              <h2 id="about-title">About this product</h2>
+              <ProductDescription text={product.description} />
+            </section>
+          )}
+
           {product.variants.some((v) => v.in_stock && v.net_weight_grams) && (
             <FlavorPanel name={product.product_name} grams={previewGrams} settings={product.customization}
               selection={unlockedInCart ? flavor?.selection : draftFlavors} preview={!unlockedInCart}
@@ -177,14 +189,7 @@ function ProductDetail({ product }: { product: Product }) {
                 else setDraftFlavors((current) => ({ ...current, [field]: level }))
               }} />
           )}
-          {payment.data && <PaymentNote methods={payment.data.methods} />}
-
-          {product.description && (
-            <section className="product-info__description" aria-labelledby="about-title">
-              <h2 id="about-title">About this product</h2>
-              <ProductDescription text={product.description} />
-            </section>
-          )}
+          <OfferBox offers={offers} />
         </div>
       </div>
 
@@ -207,11 +212,17 @@ function ProductDetail({ product }: { product: Product }) {
 function PaymentNote({ methods }: { methods: PaymentMethod[] }) {
   const online = methods.includes('PREPAID')
   const cash = methods.includes('COD')
+  const partial = methods.includes('PARTIAL_PREPAID')
+  if (!methods.length) return null
   return (
     <p className="pay-note">
-      {online ? <CardIcon size={20} /> : <CashIcon size={20} />}
-      {online && cash
-        ? 'Pay online with UPI, card or net banking, or in cash on delivery.'
+      {online || partial ? <CardIcon size={20} /> : <CashIcon size={20} />}
+      {partial
+        ? online || cash
+          ? 'See online and delivery payment options at checkout.'
+          : 'Pay part online and the balance on delivery.'
+        : online && cash
+        ? 'Pay securely online with UPI, card or net banking, or in cash on delivery.'
         : online
           ? 'Pay securely online with UPI, card or net banking.'
           : 'Pay in cash when your order is delivered.'}

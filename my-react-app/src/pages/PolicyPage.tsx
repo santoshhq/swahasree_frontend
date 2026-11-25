@@ -112,8 +112,8 @@ const POLICIES: Record<PolicyId, Policy> = {
         points: [
           'You can ask for a return within 15 days of delivery. After 15 days, we are unable to offer a refund or an exchange.',
           'The item must be unused, in its original packaging and in the same condition you received it.',
-          'We need proof of purchase to complete a return, so please keep your order number or invoice.',
-          `To start a return, write to ${SUPPORT_EMAIL} with your order number and a photo of the item.`,
+          'We need proof of purchase to complete a return, so please keep your order ID or invoice.',
+          `To start a return, write to ${SUPPORT_EMAIL} with your order ID and a photo of the item.`,
           'Every return is accepted only after our customer care team has inspected the item.',
         ],
       },
@@ -139,7 +139,7 @@ const POLICIES: Record<PolicyId, Policy> = {
         points: [
           'Check your bank account or UPI app again.',
           'Contact your bank or card provider. Refunds can take a few working days to be posted after we send them.',
-          `Still nothing after 10 working days? Write to ${SUPPORT_EMAIL} with your order number and payment transaction ID, and we will follow it up.`,
+          `Still nothing after 10 working days? Write to ${SUPPORT_EMAIL} with your order ID and payment transaction ID, and we will follow it up.`,
         ],
       },
       {

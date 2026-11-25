@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router'
 import type { BlogPost } from './blog'
+import { BRAND_LOGO } from './brand'
 import type { Product } from './types'
 
 // What search engines and link previews see for each page. index.html carries the same defaults
@@ -150,7 +151,7 @@ export function productJsonLd(product: Product, rating: { average: number | null
 export function blogPostJsonLd(post: BlogPost) {
   const url = `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`
   const iso = (s: string) => new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : `${s}Z`).toISOString()
-  const store = { '@type': 'Organization', name: 'Swahasree', url: `${SITE_URL}/`, logo: `${SITE_URL}/brand/swahasree-logo.webp` }
+  const store = { '@type': 'Organization', name: 'Swahasree', url: `${SITE_URL}/`, logo: `${SITE_URL}${BRAND_LOGO}` }
   return {
     '@context': 'https://schema.org',
     '@graph': [

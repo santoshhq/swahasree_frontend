@@ -2,12 +2,11 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { getProductReviews } from '../lib/api'
 import { shortName } from '../lib/display'
-import { orderDate, SUPPORT_EMAIL } from '../lib/format'
+import { orderDate } from '../lib/format'
 import type { Product, Review } from '../lib/types'
 import { useFetch } from '../lib/useFetch'
-import { LeafMark, ArrowIcon } from './Icons'
+import { ArrowIcon } from './Icons'
 import { Stars } from './Stars'
-import { ErrorState, Loading } from './ui'
 
 // Reviews are read from the product pages' own endpoint, so nothing here is invented: only the
 // store-approved reviews rated above 4.3, newest first. Every card links back to the product where
@@ -15,20 +14,18 @@ import { ErrorState, Loading } from './ui'
 const MIN_RATING = 4.3
 const LATEST_REVIEWS = 10
 
-const FEEDBACK_LINK = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Feedback about my Swahasree experience')}`
-
 // Long enough to read a review before the row moves on.
 const AUTO_ADVANCE_MS = 6000
 
 type HomeReview = Review & { productName: string }
 
-// The latest qualifying reviews of every product that has any, merged into one newest-first list.
+// Fetch only enough reviews to fill the homepage row.
 function loadReviews(products: Product[], signal: AbortSignal): Promise<HomeReview[]> {
   return Promise.all(
     products.map((p) =>
       getProductReviews(
         p.product_id,
-        { sort: 'latest', skip: 0, limit: Math.max(p.rating_count, LATEST_REVIEWS) },
+        { sort: 'latest', skip: 0, limit: 4 },
         signal,
       )
         .then((page) => page.reviews
@@ -41,31 +38,20 @@ function loadReviews(products: Product[], signal: AbortSignal): Promise<HomeRevi
     .then((groups) => groups.flat().sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)))
     .then((reviews) => reviews.slice(0, LATEST_REVIEWS))
 }
-
-export function CustomerReviews({ products, loading = false }: { products: Product[]; loading?: boolean }) {
-  // Every product that has approved reviews is checked, so the newest ones are never missed.
-  const items = useMemo(() => products.filter((p) => p.rating_count > 0), [products])
+export function CustomerReviews({ products }: { products: Product[] }) {
+  const items = useMemo(() => products.filter((p) => p.rating_count > 0).slice(0, 4), [products])
   const ids = items.map((p) => p.product_id).join('|')
   const list = useFetch((signal) => loadReviews(items, signal), `home-reviews|${ids}`)
+  if (!list.data?.length) return null
 
   return (
     <section className="home-reviews" aria-labelledby="home-reviews-title">
       <div className="container">
         <div className="home-reviews__head">
-          <p className="eyebrow">Reviews</p>
-          <h2 id="home-reviews-title" className="home-reviews__title">Loved by Our Customers</h2>
-          <p className="home-reviews__lead">Real experiences from people who shop with Swahasree.</p>
+          <h2 id="home-reviews-title" className="home-reviews__title">What shoppers are saying</h2>
         </div>
 
-        {loading || (list.loading && !list.data) ? (
-          <Loading label="Loading reviews…" />
-        ) : list.error && !list.data ? (
-          <ErrorState message={list.error.message} onRetry={list.reload} />
-        ) : list.data?.length ? (
-          <ReviewCarousel reviews={list.data} />
-        ) : (
-          <EmptyReviews />
-        )}
+        <ReviewCarousel reviews={list.data} />
       </div>
     </section>
   )
@@ -221,23 +207,5 @@ function ReviewText({ text }: { text: string }) {
         </button>
       )}
     </>
-  )
-}
-
-// Shown until the store has approved reviews to display: an invitation, never a made-up rating.
-function EmptyReviews() {
-  return (
-    <div className="home-reviews__empty">
-      <span className="home-reviews__empty-mark" aria-hidden><LeafMark size={40} /></span>
-      <h3>Your Experience Matters.</h3>
-      <p>Have you shopped with us? Share your feedback and help others discover Swahasree.</p>
-      <div className="home-reviews__empty-actions">
-        <a className="brand-button home-reviews__empty-cta" href={FEEDBACK_LINK}>
-          <span>Share Your Feedback</span>
-          <span className="brand-button__dot"><ArrowIcon size={17} /></span>
-        </a>
-        <Link className="home-reviews__empty-secondary" to="/account">Review a product you bought</Link>
-      </div>
-    </div>
   )
 }

@@ -7,7 +7,7 @@ import {
   updatePaymentSettings, updateShippingMode, type AdminProfile, type PaymentSettings, type ShippingMode,
 } from '../../lib/adminApi'
 import { useFetch } from '../../lib/useFetch'
-import { EyeIcon, EyeOffIcon, FreeShippingIcon, ShieldIcon, StoreIcon } from './AdminIcons'
+import { EditIcon, EyeIcon, EyeOffIcon, FreeShippingIcon, ShieldIcon, StoreIcon } from './AdminIcons'
 import { AdminPageHead, Switch, Toast } from './AdminUi'
 
 type ToastState = { message: string; kind: 'success' | 'error' } | null
@@ -49,7 +49,7 @@ function Settings({ profile }: { profile: AdminProfile }) {
           <StoreDetailsForm profile={saved} onSaved={(changes) => setSaved((s) => ({ ...s, ...changes }))} onToast={setToast} />
         </SettingsSection>
 
-        <SettingsSection icon={<CardIcon size={20} />} title="Payment methods" description="How customers can pay at checkout. At least one must stay on. Changes save at once.">
+        <SettingsSection icon={<CardIcon size={20} />} title="Payment methods" description="How customers can pay at checkout. At least one must stay on.">
           <PaymentMethods onToast={setToast} />
         </SettingsSection>
 
@@ -160,28 +160,35 @@ function StoreDetailsForm({ profile, onSaved, onToast }: { profile: AdminProfile
   )
 }
 
-const METHODS: { key: keyof PaymentSettings; icon: ReactNode; label: string; on: string }[] = [
+type PaymentSwitch = 'prepaid' | 'cod' | 'partial_prepaid'
+
+const METHODS: { key: PaymentSwitch; icon: ReactNode; label: string; on: string }[] = [
   { key: 'prepaid', icon: <CardIcon size={22} />, label: 'Online payment', on: 'UPI, cards, net banking and wallets, through Razorpay' },
   { key: 'cod', icon: <CashIcon size={22} />, label: 'Cash on delivery', on: 'Customers pay in cash when the order arrives' },
+  { key: 'partial_prepaid', icon: <CardIcon size={22} />, label: 'Partial COD', on: 'Customers pay part online and the balance at delivery' },
 ]
-
-// Saved the moment a switch flips: there's nothing to type, so no Save button.
 function PaymentMethods({ onToast }: { onToast: (t: ToastState) => void }) {
   const loaded = useFetch((signal) => getPaymentSettings(signal), 'admin-payment-settings')
   const [settings, setSettings] = useState<PaymentSettings | null>(null)
   const [saving, setSaving] = useState(false)
+  const [editingPartial, setEditingPartial] = useState(false)
+  const [percentInput, setPercentInput] = useState<string | null>(null)
 
   if (loaded.loading && !loaded.data) return <div className="settings-card__body"><Loading /></div>
   if (loaded.error || !loaded.data) {
     return <div className="settings-card__body"><ErrorState message={loaded.error?.message ?? 'Could not load the payment methods'} onRetry={loaded.reload} /></div>
   }
 
-  const current = settings ?? { prepaid: loaded.data.prepaid, cod: loaded.data.cod }
+  const current = settings ?? {
+    prepaid: loaded.data.prepaid, cod: loaded.data.cod,
+    partial_prepaid: loaded.data.partial_prepaid ?? false,
+    partial_prepaid_percent: loaded.data.partial_prepaid_percent ?? null,
+  }
   const onlineAvailable = loaded.data.online_payments_available
+  const percent = percentInput ?? String(current.partial_prepaid_percent ?? '')
 
-  const toggle = async (method: keyof PaymentSettings, value: boolean) => {
-    const next = { ...current, [method]: value }
-    if (!next.prepaid && !next.cod) {
+  const save = async (next: PaymentSettings) => {
+    if (!METHODS.some(({ key }) => next[key])) {
       onToast({ message: 'Keep at least one payment method on.', kind: 'error' })
       return
     }
@@ -189,6 +196,10 @@ function PaymentMethods({ onToast }: { onToast: (t: ToastState) => void }) {
     try {
       const res = await updatePaymentSettings(next)
       setSettings(res.payment_settings)
+      if (next.partial_prepaid !== current.partial_prepaid || next.partial_prepaid_percent !== current.partial_prepaid_percent) {
+        setEditingPartial(false)
+        setPercentInput(null)
+      }
       onToast({ message: 'Payment methods updated.', kind: 'success' })
     } catch (err) {
       onToast({ message: (err as Error).message, kind: 'error' })
@@ -197,23 +208,68 @@ function PaymentMethods({ onToast }: { onToast: (t: ToastState) => void }) {
     }
   }
 
+  const closePartialEditor = () => {
+    setEditingPartial(false)
+    setPercentInput(null)
+  }
+
+  const savePartial = (event: FormEvent) => {
+    event.preventDefault()
+    const value = Number(percent)
+    if (!Number.isInteger(value) || value < 1 || value > 99) {
+      onToast({ message: 'Enter a whole percentage from 1 to 99.', kind: 'error' })
+      return
+    }
+    void save({ ...current, partial_prepaid: true, partial_prepaid_percent: value })
+  }
+
   return (
     <ul className="settings-options">
       {METHODS.map((m) => {
+        const partial = m.key === 'partial_prepaid'
         const on = current[m.key]
-        const lastOne = on && !(m.key === 'prepaid' ? current.cod : current.prepaid)
-        const unavailable = m.key === 'prepaid' && !onlineAvailable && !on
+        const editing = partial && (!on || editingPartial)
+        const lastOne = on && !METHODS.some(({ key }) => key !== m.key && current[key])
+        const unavailable = m.key !== 'cod' && !onlineAvailable && !on
         return (
           <li key={m.key} className={`settings-option${on ? ' is-on' : ''}`}>
             <span className="settings-option__icon" aria-hidden>{m.icon}</span>
             <div className="settings-option__text">
               <strong>{m.label} <span className={`settings-pill${on ? ' is-on' : ''}`}>{on ? 'On' : 'Off'}</span></strong>
               <span>
-                {unavailable ? 'Razorpay keys are not set up on the server yet.' : on ? m.on : 'Not offered at checkout.'}
+                {unavailable ? 'Razorpay keys are not set up on the server yet.' : on || partial ? m.on : 'Not offered at checkout.'}
                 {lastOne && ' It stays on because it is the only method.'}
               </span>
+              {partial && on && !editing && (
+                <span>{current.partial_prepaid_percent}% paid online</span>
+              )}
+              {editing && (
+                <form className="settings-option__form" onSubmit={savePartial}>
+                  <label className="admin-label" htmlFor="partial-prepaid-percent">Order total to collect online (%)</label>
+                  <div className="settings-option__actions">
+                    <input className="admin-input" id="partial-prepaid-percent" type="number" min={1} max={99} step={1}
+                      value={percent} required disabled={saving || !onlineAvailable} onChange={(event) => setPercentInput(event.target.value)} />
+                    <button className="admin-button" type="submit" disabled={saving || !onlineAvailable || (on && Number(percent) === current.partial_prepaid_percent)}>
+                      {on ? 'Save percentage' : 'Enable'}
+                    </button>
+                    {on && <button className="admin-button admin-button--ghost" type="button" disabled={saving} onClick={closePartialEditor}>Cancel</button>}
+                  </div>
+                </form>
+              )}
             </div>
-            <Switch checked={on} onChange={(v) => toggle(m.key, v)} label={m.label} disabled={saving || lastOne || unavailable} />
+            {partial ? on && !editing && (
+              <div className="settings-option__actions">
+                <button className="admin-icon-button" type="button" aria-label="Edit Partial COD percentage" title="Edit percentage"
+                  disabled={saving || !onlineAvailable} onClick={() => setEditingPartial(true)}>
+                  <EditIcon size={16} />
+                </button>
+                <button className="admin-button admin-button--ghost" type="button" disabled={saving || lastOne}
+                  onClick={() => void save({ ...current, partial_prepaid: false })}>Disable</button>
+              </div>
+            ) : (
+              <Switch checked={on} onChange={(v) => void save({ ...current, [m.key]: v })}
+                label={m.label} disabled={saving || lastOne || unavailable} />
+            )}
           </li>
         )
       })}

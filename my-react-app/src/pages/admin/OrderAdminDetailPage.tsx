@@ -4,7 +4,7 @@ import { LockIcon } from '../../components/Icons'
 import { StatusPill } from '../../components/StatusPill'
 import { ErrorState, Loading, ProductImage } from '../../components/ui'
 import { allowOrderCod, getAdminOrder, getShippingMode, updateOrderStatus, type AdminOrder } from '../../lib/adminApi'
-import { STATUS_LABELS, awaitsPayment, isPrepaid, money, orderDate, paymentMethodLabel, paymentStatusLabel } from '../../lib/format'
+import { STATUS_LABELS, awaitsPayment, isPrepaid, money, orderDate, partialPayment, paymentMethodLabel, paymentStatusLabel } from '../../lib/format'
 import type { OrderStatus } from '../../lib/types'
 import { flavorSummary } from '../../lib/flavor'
 import { useCan } from '../../lib/adminAccess'
@@ -79,6 +79,7 @@ export function OrderAdminDetailPage() {
   const courierBooked = !!order.shipment?.pickup_scheduled_at
   // Not paid yet: confirming, the invoice and the courier stay locked until it is.
   const unpaid = awaitsPayment(order)
+  const split = partialPayment(order)
   const a = order.shipping_address
 
   return (
@@ -111,7 +112,7 @@ export function OrderAdminDetailPage() {
                   <span className="admin-items__name">
                     <Link to={panel(`/admin/products/${item.product_id}/edit`)}>{item.product_name}</Link>
                     <span>{item.variant_name} × {item.quantity} {item.is_free ? `free: ${item.offer_title}` : `at ${money(item.unit_price)}`}</span>
-                    {item.customization && <span>{flavorSummary(item.customization)}</span>}
+                    {item.customization && <strong className="admin-items__customization">{flavorSummary(item.customization)}</strong>}
                   </span>
                   <span className="num">
                     {item.is_free ? <span className="free-price">FREE</span> : money(item.line_total)}
@@ -126,7 +127,17 @@ export function OrderAdminDetailPage() {
               {order.pricing.discount > 0 && <div><dt>Coupon {order.coupon?.code}</dt><dd>−{money(order.pricing.discount)}</dd></div>}
               <div><dt>Delivery</dt><dd>{order.pricing.shipping_fee ? money(order.pricing.shipping_fee) : 'Free'}</dd></div>
               {order.pricing.cod_fee > 0 && <div><dt>COD fee</dt><dd>{money(order.pricing.cod_fee)}</dd></div>}
-              <div className="admin-totals__total"><dt>{unpaid ? 'Payment pending' : isPrepaid(order) ? `${paymentMethodLabel(order)}: ${paymentStatusLabel(order)}` : order.payment.status === 'collected' ? 'Collected' : 'To collect in cash'}</dt><dd>{money(order.pricing.total)}</dd></div>
+              {split && (
+                <>
+                  <div><dt>Payment method</dt><dd>Partial COD</dd></div>
+                  <div><dt>Collected amount</dt><dd><strong>{money(split.collected)}</strong></dd></div>
+                  <div>
+                    <dt>Pending amount</dt>
+                    <dd><span className={split.pending > 0 ? 'admin-payment-due' : undefined}>{money(split.pending)}</span></dd>
+                  </div>
+                </>
+              )}
+              <div className="admin-totals__total"><dt>{split ? 'Order total' : unpaid ? 'Payment pending' : isPrepaid(order) ? `${paymentMethodLabel(order)}: ${paymentStatusLabel(order)}` : order.payment.status === 'collected' ? 'Collected' : 'To collect in cash'}</dt><dd>{money(order.pricing.total)}</dd></div>
             </dl>
             {order.payment.transaction_id && <p className="table__sub">Razorpay payment {order.payment.transaction_id}</p>}
           </Panel>
@@ -180,7 +191,9 @@ export function OrderAdminDetailPage() {
                         label="Cancel order"
                         confirm={{
                           title: 'Cancel this order?',
-                          message: <p>{order.payment.status === 'paid'
+                          message: <p>{split && order.payment.status === 'partially_paid'
+                            ? `The items go back into stock and the ${money(split.online)} paid online is refunded. This can't be undone.`
+                            : order.payment.status === 'paid'
                             ? "The items go back into stock and the customer's payment is refunded. This can't be undone."
                             : "The items go back into stock. This can't be undone."}</p>,
                           confirmLabel: 'Cancel order',
